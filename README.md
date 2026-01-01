@@ -13,7 +13,7 @@ While others chase the next AI model, we reclaim the physical world. We believe 
 
 ---
 
-## Competition Format: 2v2 Swarm + Hacker
+## Competition Format: 2v2 Pilot + Hacker
 
 **The Match:**
 - Two teams compete: **Team Red** vs **Team Blue**
