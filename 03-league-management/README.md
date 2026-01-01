@@ -1,10 +1,13 @@
 # League Management
 
-**Purpose:** The sports league infrastructure that standardizes 2v2 swarm robotics competition, enabling dataset comparability and franchise growth.
+**Purpose:** The sports league infrastructure and media production engine that creates compelling video content and visually spectacular events sponsors pay to be associated with.
 
 ## What This Is
 
-Event sanctioning, media generation, sponsor relationships, rule sets, and educational programs. The organizational layer that makes Robot Arena a legitimate sport with consistent formats across all sanctioned events.
+League Management's primary job is producing promotional material that keeps Robot Arena constantly in the public eye. The 90-second match format gives us endless opportunities to stay visible in social media feeds—every match generates 60 camera angles = hundreds of clips we control and license to sponsors.
+
+**Core Strategy:**
+Event sanctioning, media generation, sponsor relationships, rule sets, and educational programs—all optimized to create content that drives sponsorship value and prize pools. The organizational layer that makes Robot Arena both a legitimate sport AND a content engine that sponsors hunger for.
 
 ## Competition Format (Standardized Across All Events)
 
@@ -61,20 +64,40 @@ Event sanctioning and franchise management:
 - **Challenge scenarios:** Warehouse logistics, infrastructure inspection, swarm coordination, disaster response analogs
 
 ### `/media/`
-The content engine that funds everything:
-- **Media templates:** Graphics, video formats, social media standards
-- **Hashtag architecture:** How content gets discovered and aggregated
-- **Broadcast standards:** Livestreaming requirements, camera placements
-- **Content licensing:** How sponsors can repost participant content
-- **Highlight production:** Post-event content packages
+The content production engine that converts matches into sponsor value:
+
+**Primary Goal:** Generate constant stream of social media content that keeps Robot Arena visible and sponsors eager to associate with the brand.
+
+**Operational Focus:**
+- **Event production quality:** Premium lighting, optimal camera angles, arena aesthetics that look spectacular on camera
+- **Video content pipeline:** Auto-editing highlights, POV compilations, strategy breakdowns, 90-second clips ready for TikTok/Reels/Shorts
+- **Content licensing:** Clear terms for sponsors to use footage in their own marketing channels
+- **Media templates:** Graphics, video formats, social media standards that ensure professional quality
+- **Hashtag architecture:** How content gets discovered and aggregated across platforms
+- **Broadcast standards:** Livestreaming requirements, 60-camera placement specifications
+- **Highlight production:** Post-event content packages delivered to sponsors within 24 hours
+
+**Why This Matters:**
+Every organization needs constant authentic content for social media. We're not selling logo placement—we're selling unlimited marketing ammunition. Sponsors get access to hundreds of clips per event that they can use across their channels, crushing the cost of traditional content production (€5k-20k per video) with unlimited clips from a single sponsorship package.
 
 ### `/sponsors/`
-Sponsor relationships and value delivery:
-- **Sponsor tiers:** What each level gets (reposting rights, talent access, branding)
-- **Pitch materials:** How to sell sponsorship value
-- **Sponsor onboarding:** Integration into events and content
-- **ROI reporting:** Demonstrating value to retain sponsors
-- **Industry targeting:** Logistics, manufacturing, automation companies who benefit from talent pipeline
+Sponsor relationships that convert content supply into revenue:
+
+**Value Proposition:**
+We solve the modern marketing problem—every company needs constant authentic content, but social media teams are starving for material that isn't scripted corporate fluff. Robot Arena provides unlimited social media ammunition through content library access.
+
+**What Sponsors Get (€100k+/year packages):**
+- **Content Library Access:** Download any camera angle, any moment, any match—licensed for use in sponsor's own social channels
+- **Distributed Micro-Influencer Network:** Every participant shares their bot's POV, organically promoting sponsor logos on arena/bots
+- **Authentic Storytelling:** Real competition, real engineering, real drama (not staged)—content that remains interesting months later
+- **Multiple Sponsor Categories:** Tech/Industrial (dataset access), Regional Development (talent showcase), Education (student recruitment), Consumer Brands (youth market), Media (broadcast rights)
+
+**Operations:**
+- **Sponsor tiers:** What each level gets (content licensing rights, talent access, branding placement)
+- **Pitch materials:** Templates showing content supply value vs traditional production costs
+- **Sponsor onboarding:** Integration into events, logo placement, content delivery workflows
+- **ROI reporting:** Clip usage analytics, impression data, talent pipeline metrics
+- **Prize pool growth:** Convert sponsor payments into larger awards that attract better talent and more valuable content
 
 ### `/rulesets/`
 

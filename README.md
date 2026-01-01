@@ -170,7 +170,17 @@ The rental and hardware arm. Manufactures, maintains, ships, and receives bot fl
 - School Kit (€300): 6× Base Modules + curriculum + instructor training + optional SMARS chassis
 
 ### 3. League Management (`03-league-management/`)
-The sports league infrastructure. Event sanctioning, media generation, sponsor relationships, rule sets, school programs. Guild structure for decentralized expansion. Standardization enables dataset comparability and franchise growth.
+The sports league infrastructure and media production engine. Primary goal: create compelling video content and visually spectacular events that sponsors pay to be associated with.
+
+**Core Strategy:**
+The 90-second format gives us endless opportunities to stay visible in social media feeds. Every match = 60 camera angles = hundreds of clips we control and license to sponsors. League Management's job is not just running events—it's producing promotional material that keeps Robot Arena constantly in the public eye, driving up the value of sponsorship packages and prize pools.
+
+**Operational Focus:**
+- Event production quality (lighting, camera angles, arena aesthetics must look premium)
+- Video content pipeline (auto-editing highlights, POV compilations, strategy breakdowns)
+- Sponsor relationship management (content licensing, logo placement, activation rights)
+- Media distribution (YouTube, TikTok, partner channels, participant networks)
+- Prize pool growth (convert sponsor payments into larger awards that attract better talent)
 
 Uses the Order and Guild systems defined above to organize competition tiers and manage decentralized event network.
 
