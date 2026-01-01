@@ -1,9 +1,12 @@
 # Robot Arena
+Business infrastructure for engineers
 ## The Order of Reawakened Machines
 
 **Mission:** Education masquerading as ultimate entertainment. Questions first, solutions second.
 
 Robot Arena is a competitive robotics sport that accidentally builds the skillset and knowledge base needed for industrial automation at scale. We monetize datasets and talent pipeline, not hardware.
+
+**The Key Difference:** Engineers typically avoid financial and social problems like the plague, focusing only on technical solutions. Robot Arena inverts this—we solve the business, marketing, and monetization problems so engineers can focus purely on what they do best: building and optimizing. The sport provides the customer acquisition, the dataset licensing handles revenue, the guild structure manages distribution. Engineers just contribute their modifications to the Knowledge Commons and compete.
 
 **Core Philosophy:** "What is broken can be reborn. What is obsolete can evolve."
 
