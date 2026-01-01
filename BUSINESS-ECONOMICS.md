@@ -203,7 +203,6 @@ Every actual deployment faces these threats:
 - Tests: Network security, robot allegiance switching, operator adaptability
 
 **Game 4: Territory Production Bonuses (Full Z Rules)**
-- Capturing territories gives manufacturing advantage (faster unit spawns)
 - Tipping point mechanic (>50% territory → game accelerates toward conclusion)
 - Tests: Strategic prioritization, snowball resistance, contested resource control
 
