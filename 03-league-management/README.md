@@ -373,6 +373,7 @@ Orders represent different **approaches** to competitive swarm robotics, not ski
 7. **Dataset licensing:** Knowledge Commons commercial tiers (revenue-threshold model)
 8. **Educational programs:** School program fees (€200-500/school, sponsor-supported)
 9. **Sigil merchandise:** Metal tokens, patches (€5k-15k/year at scale)
+10. **Virtual competitions (NEW):** Online tournaments, qualifiers, practice leagues (€10-20 entry, subscriptions)
 
 ## Prize Structure Philosophy
 
@@ -407,3 +408,80 @@ Orders represent different **approaches** to competitive swarm robotics, not ski
 - Documentation incentivized (prizes for contributions)
 - Hacker role valued equally (security research gets recognition)
 - Builder innovation rewarded (successful mods get integrated)
+
+---
+
+## Virtual Competitions (NEW - Global Accessibility)
+
+**Purpose:** Expand participant base 10x through online tournaments using the Virtual Arena Simulator.
+
+### Competition Types
+
+**Monthly Online Qualifiers (Free Entry)**
+- Run on Virtual Arena Simulator (Mac Mini M4)
+- Same 2v2 format as physical events
+- Top 20% invited to quarterly physical championship
+- Top 5 receive travel sponsorship
+- **Prize pool:** Dataset access credits, virtual recognition
+
+**Virtual Practice Leagues (Subscription)**
+- €10/month unlimited simulator access
+- Solo practice mode (test strategies without opponents)
+- Ranked matchmaking (compete against other subscribers)
+- Replay analysis tools (review your matches)
+- **Revenue:** €50k+/year at 500 subscribers
+
+**Corporate Virtual Workshops (€1k/day)**
+- Custom scenarios in simulator (warehouse layout, inspection course)
+- Test swarm algorithms before physical deployment
+- Strategy validation (does it work under adversarial conditions?)
+- Training for operators (practice without hardware risk)
+- **Revenue:** €20-40k/year from 20-40 workshops
+
+### Integration with Physical Events
+
+**Funnel Strategy:**
+```
+Free Practice in Simulator
+    ↓
+Monthly Online Qualifier (free)
+    ↓
+Top 20% → Quarterly Physical Event (€50 entry)
+    ↓
+Top 5 → Sponsored Travel + Accommodation
+    ↓
+Winners → Dataset Access + Recognition
+```
+
+**Off-Season Engagement:**
+- Virtual leagues run year-round
+- Physical events quarterly (high production value)
+- Participants stay engaged between physical competitions
+- Strategies developed online, validated physically
+
+### Technical Infrastructure
+
+**Runs on Single Mac Mini M4:**
+- Python physics engine (60 bots @ 4Hz)
+- Unreal Engine 5 (interpolates to 60fps)
+- 2 H.264 streams (top-down + POV)
+- Web UI (same as physical bots)
+
+**Sim-to-Real Validation:**
+- Published metrics prove accuracy (>85% position prediction)
+- ML collision model trained on real UART logs
+- Participants trust virtual practice translates to physical performance
+
+### Revenue Impact
+
+**Year 1 Projections:**
+- 100 subscribers × €10/month = €12k/year
+- 20 online qualifiers × 50 participants × €0 = €0 (loss leader)
+- 10 corporate workshops × €1k = €10k/year
+- **Total:** €22k revenue (proves concept)
+
+**Year 2 Projections:**
+- 500 subscribers × €10/month = €60k/year
+- 30 online tournaments × 200 participants × €10 entry = €60k/year
+- 30 corporate workshops × €1k = €30k/year
+- **Total:** €150k revenue (sustainable)

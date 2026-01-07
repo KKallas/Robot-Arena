@@ -114,7 +114,8 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 **The training data goldmine.** Thousands of hours of 60-bot multi-agent behavior under adversarial conditions, with complete hardware/software documentation.
 
 **`/match-replays/`** - Full Sensor Logs (Licensed)
-- 60× robot position/velocity trajectories (10Hz sampling)
+- **UART logs** from M5 Camera SD cards (complete bot communication record)
+- 60× robot position/velocity trajectories reconstructed from logs
 - 60× camera feeds (saved separately, referenced in metadata)
 - Network traffic captures (pcap format, includes hacker attacks)
 - Pilot input logs (button presses vs. AI prompts, timestamps)
@@ -137,10 +138,57 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 - Defensive responses (how pilots adapted to ongoing attacks)
 - **Resurrection performance data:** How resurrected robots performed vs SMARS baseline (mobility, durability, coordination effectiveness)
 
-**`/transfer-learning/`** - Sim-to-Real Validation
-- Simulation equivalents of physical matches (Gazebo, Webots, custom)
+**`/collision-events/`** - Extracted Collision Data (NEW - Critical for Simulator)
+- Collision events extracted from UART logs
+- Pre-collision state: bot positions, velocities, masses, collision angle
+- Post-collision state: resulting velocities, damage/disabling events
+- Video timestamps for visual verification
+- **Format:** JSON files, one per collision, linked to match replay
+- **Purpose:** Training data for ML collision predictor in Virtual Arena Simulator
+- **Example:**
+  ```json
+  {
+    "match_id": "2025-q4-tallinn-042",
+    "timestamp": 45.2,
+    "bot_a": {"id": 12, "pos": [1.2, 0.8], "vel": [0.5, 0.3], "mass": 0.18},
+    "bot_b": {"id": 27, "pos": [1.3, 0.9], "vel": [-0.4, 0.2], "mass": 0.20},
+    "collision_angle": 1.57,
+    "post_collision": {
+      "bot_a_vel": [0.1, 0.5],
+      "bot_b_vel": [-0.2, -0.1],
+      "bot_a_disabled": false,
+      "bot_b_disabled": false
+    }
+  }
+  ```
+
+**`/sim-to-real-validation/`** - Simulator Accuracy Metrics (NEW - Proof of Dataset Value)
+- Side-by-side comparison: virtual vs physical match outcomes
+- Position RMSE (root mean square error) over 90 seconds
+- Collision prediction accuracy (velocity matching, damage events)
+- Goal detection accuracy (vision system simulation)
+- **Published monthly** as new matches improve ML models
+- **Example metrics file:**
+  ```json
+  {
+    "validation_date": "2026-01-07",
+    "model_version": "collision_predictor_v3.pth",
+    "test_scenarios": 50,
+    "metrics": {
+      "position_rmse": 0.087,
+      "velocity_rmse": 0.092,
+      "collision_accuracy": 0.923,
+      "goal_detection_accuracy": 0.895
+    },
+    "dataset_size": "12,450 matches, 8,732 collision events"
+  }
+  ```
+- **Purpose:** Proves dataset captures real physics, justifies commercial licensing prices
+
+**`/transfer-learning/`** - Sim-to-Real Research
 - Domain randomization parameters that worked
 - Physical calibration data (motor response curves, sensor noise profiles)
+- Strategies proven in simulator, validated in physical arena
 - **Research value:** Closing sim-to-real gap for industrial deployments
 
 **`/tool-selection/`** - Human-AI Collaboration Data

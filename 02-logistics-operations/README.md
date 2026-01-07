@@ -178,7 +178,11 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 - Firmware versions (ensure all bots run same code for fairness)
 
 **Maintenance Schedule:**
-- **After every event:** Visual inspection, charge all batteries, firmware update check
+- **After every event:**
+  - Visual inspection, charge all batteries
+  - Verify UART logs uploaded to Knowledge Commons (automatic via WiFi)
+  - Firmware update check (Arduino, M5 Atom, M5 Camera)
+  - Clear SD card space on M5 Camera modules (logs auto-upload, then purge)
 - **Monthly:** Deep clean, motor bearing check, sensor calibration
 - **Quarterly:** Replace worn components (wheels, sensors), battery health test
 - **Annually:** Full refurbishment, integrate successful custom mods from pilots

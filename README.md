@@ -136,6 +136,8 @@ Instead of skill-based divisions, Robot Arena uses symbolic **Orders** represent
 
 ## Three Pillars
 
+**Critical Understanding:** The media house (League Management) is the economic engine. Without professional video production generating sponsor revenue, none of the other pillars can function. Competitions exist to create premium content, datasets are byproducts, hardware enables content creation.
+
 ### 1. Knowledge Commons (`01-knowledge-commons/`)
 The open-source repository that becomes global physical AI infrastructure. Every match recorded, every strategy documented, every modification shared. GitHub as the technical memory of swarm robotics.
 
@@ -209,6 +211,181 @@ Uses the Order and Guild systems defined above to organize competition tiers and
 - **Seasonal License:** €10k/year for full season access (read-only, no commercial use)
 - **Commercial:** €50k+/year for deployment rights in industry verticals (warehouse, inspection, etc.)
 - **Sponsor Packages:** Dataset access included with event sponsorship (€100k+/year)
+
+---
+
+## Virtual Arena Simulator: Proof of Dataset Value
+
+**The Critical Question:** How do we prove the dataset is worth €50k+/year to commercial licensees?
+
+**Answer:** Build a high-fidelity simulator trained on real match data, then publish validation metrics showing it predicts physical outcomes with 85%+ accuracy.
+
+### What It Is
+
+A Mac Mini M4 running:
+- **Python game engine**: 60 bots @ 4Hz physics updates (250ms intervals)
+- **Unreal Engine 5**: Receives positions, interpolates to 60fps for smooth rendering
+- **2 video streams**: Top-down arena view + single bot POV (operator selects which bot)
+- **Same software stack**: Identical MicroPython code as physical bots
+- **ML collision prediction**: Trained on real match UART logs
+
+**Why This Architecture Works for One Person:**
+- Physics runs at 4Hz (easy to debug, low CPU)
+- Unreal just interpolates positions (no complex physics in engine)
+- Only 2 camera streams (not 61), manageable bandwidth
+- Python game engine is ~2000 lines (maintainable)
+- ML model trains offline, deploys as frozen weights
+
+### Why It Matters
+
+**For Dataset Licensing:**
+> "Our simulator achieves 87% position accuracy because it's trained on 10,000+ real robot collisions from competitive matches. This proves our dataset captures actual swarm physics—your warehouse deployment will benefit from strategies battle-tested under adversarial conditions."
+
+**Validation Process:**
+1. Run same scenario in simulator and physical arena
+2. Compare final positions, collision outcomes, goal scoring
+3. Publish metrics in Knowledge Commons (`/ml-datasets/sim-to-real-validation/`)
+4. Update monthly as more real matches improve ML models
+
+**Published Accuracy Targets:**
+- Position prediction: >85% (within 10cm after 90 seconds)
+- Velocity after collision: >80% (within 0.1 m/s)
+- Damage/disabling events: >90% (binary: bot functional or not)
+
+### Technical Realities (Single Developer)
+
+**What's Feasible:**
+- ✅ Python physics engine (250ms updates, 60 bots = manageable)
+- ✅ Unreal position interpolation (built-in feature, minimal code)
+- ✅ 2 H.264 streams (top-down + POV, FFmpeg handles encoding)
+- ✅ ML collision model (train once, deploy as static weights)
+- ✅ Virtual bots run same init.py as physical (code reuse)
+
+**What's Not:**
+- ❌ 60 simultaneous POV streams (too much bandwidth/CPU)
+- ❌ Complex Unreal physics (defeats purpose of 4Hz Python engine)
+- ❌ Real-time ML training (train offline, deploy weights)
+- ❌ Photorealistic graphics (simple 3D models, focus on accuracy)
+
+**Development Time:**
+- Month 1-2: Python physics engine + collision detection
+- Month 3-4: Unreal scene + position streaming (WebSocket @ 4Hz)
+- Month 5-6: ML collision model training pipeline
+- Month 7-8: Web UI + virtual bot API endpoints
+- **Total: ~8 months part-time for MVP**
+
+### Business Impact
+
+**Proof of Quality:**
+- Commercial licensees see validation metrics before buying
+- Academic researchers cite sim-to-real papers (credibility)
+- Competitors trust virtual practice translates to physical performance
+
+**Global Accessibility:**
+- Online competitions (no hardware needed)
+- Schools practice in simulator before renting physical fleet
+- International competitors qualify online, compete physically at finals
+
+**Dataset Flywheel:**
+```
+Physical Matches
+    ↓
+UART Logs (all bot communication)
+    ↓
+Extract Collision Events
+    ↓
+Train ML Model (offline, batch process)
+    ↓
+Deploy to Simulator
+    ↓
+Publish Validation Metrics
+    ↓
+Attracts Licensees (proof of value)
+    ↓
+More Revenue → Larger Prizes
+    ↓
+More Competitors → More Data
+```
+
+### How It Works
+
+**Game Loop (Python, 4Hz):**
+```python
+# Every 250ms
+for bot in bots:
+    bot.update_position()  # Apply velocity
+    bot.check_collisions()  # ML model predicts outcomes
+    bot.execute_triggers()  # Process motor commands
+
+# Send to Unreal via WebSocket
+send_positions_to_unreal(bots)
+```
+
+**Unreal Engine (60fps):**
+```cpp
+// Receives positions @ 4Hz, interpolates to 60fps
+void Tick(DeltaTime) {
+    for (Bot in Bots) {
+        Bot.SmoothPosition = Lerp(LastPos, NextPos, Alpha);
+        Bot.SetActorLocation(SmoothPosition);
+    }
+}
+```
+
+**Video Streams:**
+- **Top-down**: 1920x1080 @ 30fps (shows all 60 bots, arena overview)
+- **POV**: 640x480 @ 30fps (operator clicks bot in UI to switch view)
+- H.264 encoded via FFmpeg, streamed via RTSP
+
+**ML Collision Predictor:**
+- Trained offline on Knowledge Commons UART logs
+- PyTorch model (~500KB file size)
+- Inference: <1ms per collision on M4 Neural Engine
+- No GPU needed (M4 unified memory + ANE handles it)
+
+### Revenue Streams
+
+**Virtual Competitions:**
+- Online tournaments: €10-20 entry, global participation
+- Practice mode: Free (drives dataset value awareness)
+- Qualifying rounds: Free, top performers invited to physical events
+
+**Educational Access:**
+- Schools: €100/semester for 30 students (vs €500 physical rental)
+- Universities: Free for research (require dataset citation)
+- Corporate: €1k/day workshops (strategy testing before deployment)
+
+**Dataset Enhancement:**
+- Synthetic edge cases (test scenarios not yet seen physically)
+- Validation services: €3k to test client's swarm algorithm in sim
+
+### Integration with Physical Events
+
+**Pilot Workflow:**
+1. Practice in simulator (unlimited, free)
+2. Compete in online qualifier (€10 entry)
+3. Top 20% invited to physical event (travel support for top 5)
+
+**Off-Season:**
+- Virtual leagues run monthly
+- Physical events quarterly (high production)
+- Keeps community engaged between physical competitions
+
+### Success Metrics
+
+**Technical (Achievable by One Person):**
+- Sim-to-real position accuracy: >85%
+- Collision prediction accuracy: >80%
+- System uptime: >95% (simple architecture, fewer failure points)
+- Development time: 8 months MVP, 12 months production-ready
+
+**Business:**
+- Dataset licensing: Validation metrics justify €50k+ pricing
+- Virtual participation: 10x more than physical (lower barrier)
+- Global reach: 20+ countries in Year 1 (vs 3-5 for physical only)
+
+**Why This Proves Dataset Value:**
+The simulator is trained entirely on real match data. When it accurately predicts collision outcomes and swarm behaviors, it demonstrates that the dataset captures genuine multi-agent physics—not just noise. This validation is worth more to licensees than any marketing claim.
 
 ---
 
