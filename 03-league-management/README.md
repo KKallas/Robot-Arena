@@ -25,18 +25,499 @@ League Management is Robot Arena's **self-organizing nervous system**—an auton
 - Skill gate qualification checks
 - Branch lifecycle state transitions
 
-**Layer 2: LLM Referee (90% of Human Decisions)**
-- Branch validation (is this strategy distinct?)
-- Teacher credit attribution (did they actually help?)
-- Badge awarding (meets criteria?)
-- Convergent evolution detection (merge similar strategies?)
-- Meta-shift analysis (which branches are rising/falling?)
+**Layer 2: Precog Meeting (90% of Human Decisions)**
+- 3 randomly selected LLMs vote on each decision
+- Each LLM gets random prompt from pool of 20
+- Majority (2/3) wins
+- System runs autonomously forever, no human needed
 
 **Layer 3: Community Voting (10% Edge Cases)**
-- Disputed teacher credits
-- Controversial branch mergers
-- Rule change proposals
-- Major governance updates
+- Tie votes (1-1-1 three-way split)
+- Low confidence unanimous votes (<50%)
+- Major rule changes
+- Watchdog reset approval
+
+---
+
+## The Precog Meeting: Radically Simple Autonomous Governance
+
+**Inspired by Minority Report's three precogs, but for league governance instead of crime.**
+
+### Core Mechanism
+
+Every governance decision summons a "Precog Meeting":
+
+```python
+import random
+
+def precog_meeting(governance_question):
+    """
+    The autonomous decision engine.
+    Randomly selects 3 LLMs and 3 prompts from pools.
+    """
+
+    # Pool of 5 LLM judges (can be same model, different temps)
+    LLM_POOL = [
+        {"name": "Agatha", "model": "claude-sonnet-4-5", "temp": 0.7},
+        {"name": "Arthur", "model": "claude-sonnet-4-5", "temp": 0.9},
+        {"name": "Dash", "model": "claude-sonnet-4-5", "temp": 1.0},
+        {"name": "Iris", "model": "claude-sonnet-4-5", "temp": 0.8},
+        {"name": "Wally", "model": "claude-sonnet-4-5", "temp": 1.1}
+    ]
+
+    # Pool of 20 prompt variations
+    PROMPT_POOL = load_prompt_pool()  # 20 variations of governance prompts
+
+    # Randomly select 3 LLMs (no replacement)
+    selected_llms = random.sample(LLM_POOL, 3)
+
+    # Randomly select 3 prompts (with replacement - same prompt can be used twice)
+    selected_prompts = [random.choice(PROMPT_POOL) for _ in range(3)]
+
+    # Each LLM votes using their assigned prompt
+    votes = []
+    for llm, prompt in zip(selected_llms, selected_prompts):
+        vote = llm.ask(prompt.format(question=governance_question))
+        votes.append({
+            'llm': llm['name'],
+            'prompt_id': prompt['id'],
+            'vote': vote['decision'],  # approve/reject
+            'confidence': vote['confidence'],  # 0.0-1.0
+            'reasoning': vote['reasoning']
+        })
+
+    # Majority wins (2 out of 3)
+    approvals = sum(1 for v in votes if v['vote'] == 'approve')
+
+    if approvals >= 2:
+        outcome = 'approve'
+    elif approvals == 1:
+        outcome = 'reject'
+    else:  # All three different or all reject
+        outcome = 'reject'
+
+    # Special case: Tie (1 approve, 1 reject, 1 abstain)
+    if len(set(v['vote'] for v in votes)) == 3:
+        outcome = 'community_vote'  # Escalate to humans
+
+    # Log everything (transparency)
+    log_precog_meeting({
+        'question': governance_question,
+        'llms': [v['llm'] for v in votes],
+        'prompts': [v['prompt_id'] for v in votes],
+        'votes': votes,
+        'outcome': outcome
+    })
+
+    return outcome
+```
+
+**Example Precog Meeting:**
+```
+Question: "Should tech_187 (WiFi Frequency Hopping) be approved as new branch?"
+
+Selected LLMs: Agatha, Dash, Wally
+Selected Prompts: prompt_04, prompt_17, prompt_04 (note: prompt_04 used twice)
+
+Vote 1 (Agatha + prompt_04):
+  → approve (confidence: 0.72)
+  → "Uses PRNG for hopping, distinct from reactive switching"
+
+Vote 2 (Dash + prompt_17):
+  → reject (confidence: 0.81)
+  → "Insufficient evidence of measurable advantage"
+
+Vote 3 (Wally + prompt_04):
+  → approve (confidence: 0.68)
+  → "Novel approach, worth testing in competition"
+
+Majority: 2 approve, 1 reject → APPROVED
+Logged: dec_5042 (Agatha, Dash, Wally | prompts 04, 17, 04)
+```
+
+### The 20-Prompt Pool
+
+**Why 20 prompts instead of 15 specific ones?**
+- Same decision can be evaluated from multiple angles
+- Randomness prevents gaming (pilots can't optimize for specific prompt)
+- Prompt evolution happens through survival (bad prompts get replaced)
+
+**Prompt Categories (3-5 prompts each):**
+
+**1. Strict Validation (4 prompts)**
+- Require 3+ independent implementations
+- Must show measurable win rate improvement
+- Must differ >50% from existing strategies
+- Focus on objective criteria
+
+**2. Lenient Exploration (4 prompts)**
+- Encourage experimental strategies
+- Accept novelty even without proven results
+- Lower bar for new ideas
+- Focus on innovation potential
+
+**3. Community-Aligned (4 prompts)**
+- Prioritize community consensus
+- Check for similar past approvals
+- Consider pilot feedback heavily
+- Focus on participant satisfaction
+
+**4. Data-Driven (4 prompts)**
+- Require statistical significance
+- Demand UART log evidence
+- Focus on measurable outcomes
+- Ignore subjective opinions
+
+**5. Hybrid Balanced (4 prompts)**
+- Mix of strict + lenient criteria
+- Weighted scoring across dimensions
+- Contextual decision-making
+- Balanced trade-offs
+
+**Example Prompts from Pool:**
+
+**Prompt #04 (Strict Validation):**
+```
+Evaluate if this technique deserves a new tech tree branch.
+
+CRITERIA:
+1. At least 3 pilots must have independently discovered it
+2. Win rate improvement >10% when used
+3. Implementation differs >50% from existing branches
+
+VOTE: approve only if all 3 criteria met
+OUTPUT: {"vote": "approve"/"reject", "confidence": 0.0-1.0, "reasoning": "..."}
+```
+
+**Prompt #17 (Lenient Exploration):**
+```
+Evaluate if this technique shows innovation potential.
+
+CRITERIA:
+1. Is the approach genuinely novel?
+2. Could it lead to interesting meta developments?
+3. Would other pilots want to learn this?
+
+VOTE: approve if 2+ criteria met, encourage experimentation
+OUTPUT: {"vote": "approve"/"reject", "confidence": 0.0-1.0, "reasoning": "..."}
+```
+
+**Why This Works:**
+- 3 randomly selected prompts average out to balanced decisions
+- Sometimes 2 strict + 1 lenient → conservative
+- Sometimes 2 lenient + 1 strict → progressive
+- Over time, distribution regresses to mean
+
+### Controlled Prompt Evolution
+
+**The Problem:**
+If prompts evolve freely, system drifts unpredictably.
+
+**The Solution: ONE PROMPT AT A TIME + SURVIVAL OF THE FITTEST**
+
+**Evolution Rules:**
+
+1. **Only modify 1 prompt per month** (out of 20 in pool)
+2. **New prompt replaces worst-performing prompt**
+3. **Performance = community agreement rate**
+4. **Must show measurable improvement over replaced prompt**
+
+**Monthly Evolution Process:**
+```python
+def evolve_prompt_pool():
+    """Run once per month, replace worst prompt with experiment"""
+
+    # Calculate performance for each prompt
+    performance = {}
+    for prompt_id in range(1, 21):
+        decisions = get_decisions_using_prompt(prompt_id, days=30)
+        agreement = calculate_community_agreement(decisions)
+        performance[prompt_id] = {
+            'usage_count': len(decisions),
+            'agreement_rate': agreement,
+            'avg_confidence': avg([d['confidence'] for d in decisions])
+        }
+
+    # Find worst-performing prompt (but used at least 10 times)
+    eligible = {pid: perf for pid, perf in performance.items()
+                if perf['usage_count'] >= 10}
+
+    if not eligible:
+        return "Not enough data, skip evolution this month"
+
+    worst_prompt = min(eligible.items(), key=lambda x: x[1]['agreement_rate'])
+
+    # Generate experimental replacement
+    experiment = generate_prompt_variation(
+        base=random.choice(range(1, 21)),  # Random prompt as inspiration
+        target_weakness=worst_prompt[1]     # Try to fix weakness
+    )
+
+    # Run 30-day trial: worst prompt vs experiment
+    # (50% of decisions use old, 50% use experiment)
+    trial_results = run_split_test(
+        prompt_a=worst_prompt[0],
+        prompt_b=experiment,
+        duration_days=30
+    )
+
+    # If experiment beats worst prompt, replace it
+    if trial_results['experiment_agreement'] > trial_results['worst_agreement']:
+        replace_prompt(worst_prompt[0], experiment)
+        log_evolution(f"Replaced prompt #{worst_prompt[0]} with experiment")
+    else:
+        log_evolution(f"Experiment failed, keeping prompt #{worst_prompt[0]}")
+```
+
+**Example Evolution:**
+```
+Month 1: Baseline
+  Prompt #12 performance: 68% community agreement (worst in pool)
+  Average pool performance: 79% agreement
+
+Month 2: Generate Experiment
+  Inspiration: Prompt #04 (strict validation) scored 84% agreement
+  Weakness in #12: "Too lenient, approves too many similar branches"
+  Experiment: Add "must differ >40% from existing" clause
+
+Month 3: Split Test
+  Prompt #12 (original): 42 decisions, 67% agreement
+  Experiment: 38 decisions, 76% agreement
+  Result: Experiment wins (+9% agreement)
+  Action: Replace prompt #12 with experiment
+
+Month 4: Monitor
+  New prompt #12: 51 decisions, 74% agreement (holding steady)
+  New worst prompt: #07 at 71% agreement
+```
+
+**Key Constraint: Similar Changes Must Prove Merit**
+```python
+def generate_prompt_variation(base, target_weakness):
+    """Create experiment that addresses weakness"""
+
+    # Check if similar change has been tried before
+    change_pattern = identify_change_pattern(target_weakness)
+
+    past_experiments = find_experiments_by_pattern(change_pattern)
+
+    if past_experiments:
+        # Similar change tried before?
+        successful = [e for e in past_experiments if e['outcome'] == 'promoted']
+
+        if not successful:
+            # This pattern failed before, try different approach
+            return generate_different_variation(base, target_weakness)
+
+    # Generate variation
+    return create_experiment_prompt(base, change_pattern)
+```
+
+### Watchdog System: Self-Healing Reset
+
+**The Problem:**
+- System could drift over months/years
+- Need automatic correction without human oversight
+
+**The Solution: Statistical Watchdog**
+
+**Monitors 5 Metrics Weekly:**
+```python
+class WatchdogMonitor:
+    def __init__(self):
+        self.thresholds = {
+            'community_override_rate': 0.25,  # >25% = LLMs diverging from humans
+            'decision_reversal_rate': 0.15,   # >15% = unstable decisions
+            'avg_confidence': 0.60,            # <60% = prompts too vague
+            'unanimous_rate': 0.30,            # <30% = prompts conflicting
+            'tie_rate': 0.10                   # >10% = too many escalations
+        }
+
+    def weekly_health_check(self):
+        """Runs every Monday, checks if reset needed"""
+
+        metrics = calculate_last_7_days()
+
+        # RED FLAGS (immediate reset)
+        if metrics['community_override_rate'] > self.thresholds['community_override_rate']:
+            return self.trigger_reset("LLMs diverging from community values")
+
+        if metrics['decision_reversal_rate'] > self.thresholds['decision_reversal_rate']:
+            return self.trigger_reset("Too many unstable decisions")
+
+        if metrics['avg_confidence'] < self.thresholds['avg_confidence']:
+            return self.trigger_reset("LLM confidence too low")
+
+        # YELLOW FLAGS (track for 2 weeks)
+        warnings = []
+        if metrics['unanimous_rate'] < self.thresholds['unanimous_rate']:
+            warnings.append("Low unanimity rate")
+
+        if metrics['tie_rate'] > self.thresholds['tie_rate']:
+            warnings.append("Too many tie votes")
+
+        if warnings:
+            return self.track_warning(warnings)
+
+        # GREEN (healthy, create snapshot)
+        return self.create_snapshot()
+
+    def trigger_reset(self, reason):
+        """Reset to last stable snapshot"""
+
+        # Find most recent snapshot with good metrics
+        snapshot = self.find_last_stable_snapshot()
+
+        if not snapshot:
+            # No stable snapshot, use original launch prompts
+            snapshot = self.load_original_prompts()
+
+        # Restore prompt pool
+        self.restore_snapshot(snapshot)
+
+        # Log reset publicly
+        log_reset({
+            'timestamp': now(),
+            'reason': reason,
+            'snapshot_date': snapshot['timestamp'],
+            'decisions_since_snapshot': count_decisions_since(snapshot)
+        })
+
+        # Notify community (Discord)
+        notify_community(f"⚠️ Watchdog reset triggered: {reason}\n"
+                        f"Restored prompts from {snapshot['timestamp']}")
+
+        return "RESET_COMPLETE"
+```
+
+**Snapshot System:**
+```python
+def create_snapshot():
+    """Save current prompt pool as potential restore point"""
+
+    metrics = calculate_last_30_days()
+
+    snapshot = {
+        'timestamp': now(),
+        'prompts': copy.deepcopy(PROMPT_POOL),
+        'performance': {
+            'community_agreement': metrics['agreement_avg'],
+            'decision_count': metrics['total_decisions'],
+            'reversal_rate': metrics['reversal_rate'],
+            'confidence_avg': metrics['confidence_avg']
+        }
+    }
+
+    # Save to git (version controlled, auditable)
+    save_snapshot(f"governance/snapshots/{now().isoformat()}.json")
+
+    # Keep last 12 snapshots (3 months @ weekly)
+    cleanup_old_snapshots(keep=12)
+
+    return snapshot
+
+def find_last_stable_snapshot():
+    """Find most recent snapshot meeting stability criteria"""
+
+    snapshots = load_all_snapshots()
+
+    for snapshot in reversed(snapshots):
+        perf = snapshot['performance']
+
+        # Stability criteria
+        if (perf['community_agreement'] > 0.75 and
+            perf['decision_count'] > 100 and
+            perf['reversal_rate'] < 0.10):
+            return snapshot
+
+    return None  # No stable snapshot found
+```
+
+**Adaptive Threshold Tuning:**
+```python
+def tune_watchdog_quarterly():
+    """Every 3 months, adjust sensitivity based on reset frequency"""
+
+    reset_count = count_resets_last_90_days()
+
+    # Target: 1-2 resets per quarter
+    if reset_count == 0:
+        # Too rigid, never resetting
+        self.thresholds['community_override_rate'] *= 0.90  # More sensitive
+        log_tuning("Reduced thresholds (no resets in 90 days)")
+
+    elif reset_count > 4:
+        # Too loose, resetting too often
+        self.thresholds['community_override_rate'] *= 1.10  # Less sensitive
+        log_tuning("Increased thresholds (excessive resets)")
+
+    else:
+        # Goldilocks zone
+        log_tuning("Thresholds unchanged (healthy reset frequency)")
+```
+
+**Reset Frequency Targets:**
+- **Ideal:** 1-2 resets per quarter (adapts without instability)
+- **Too rigid:** 0 resets per year (prompts become outdated)
+- **Too loose:** >1 reset per month (never stabilizes)
+
+### Complete Example: System Runs Autonomously for 1 Year
+
+**Month 1: Baseline**
+```
+Precog meetings: 287
+Prompts in pool: 20 (original launch versions)
+Avg community agreement: 79%
+Resets: 0
+```
+
+**Month 2: First Evolution**
+```
+Worst prompt: #12 (68% agreement)
+Experiment: Add stricter validation clause
+Result: Experiment succeeds (76% agreement)
+Action: Promote experiment → new prompt #12
+```
+
+**Month 4: First Reset**
+```
+Watchdog detects: Community override rate 27% (threshold: 25%)
+Diagnosis: LLMs approving too many marginal branches
+Action: Reset to Month 2 snapshot
+Result: Prompts #12 (new) and #07 (evolved in Month 3) reverted
+```
+
+**Month 7: Stable Operation**
+```
+Precog meetings: 1,842 total
+Avg agreement: 81%
+Resets since Month 4: 0 (stable)
+Prompt evolution: 3 prompts replaced (months 5, 6, 7)
+```
+
+**Month 10: Second Reset**
+```
+Watchdog detects: Reversal rate 16% (threshold: 15%)
+Diagnosis: Prompts evolved too lenient, unstable decisions
+Action: Reset to Month 7 snapshot
+Result: 3 evolved prompts reverted
+```
+
+**Month 12: End of Year**
+```
+Total precog meetings: 3,456
+Community agreement: 80% (within 1% of launch)
+Resets: 2 (target: 1-2 per quarter → healthy)
+Prompt evolution: 7 prompts replaced, 2 resets reverted 5 of them
+Net evolution: 2 prompts permanently improved from launch versions
+```
+
+**Why This Works:**
+- System runs autonomously (no human needed)
+- Evolves gradually (1 prompt/month)
+- Self-corrects (watchdog resets drift)
+- Transparent (all decisions logged publicly)
+- Survives indefinitely (no human intervention required)
 
 ### Discord Agent Framework
 
