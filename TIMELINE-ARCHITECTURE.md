@@ -100,13 +100,6 @@ Contains detailed internal state:
 
 Tracks decision authority in live timeline. Answers: who made this decision at this moment?
 
-**Values:**
-- user = pilot manually initiated
-- ai = AI copilot initiated
-- script_name = autonomous script running
-- system = match infrastructure
-- bot_id = individual bot telemetry
-
 **Purpose:** Dataset buyers analyze trust patterns, AI latency tolerance, automation handoff, rejection behavior, learning curves.
 
 This field makes the dataset valuable. Without it, just telemetry. With it, human-AI collaboration data under time pressure.
