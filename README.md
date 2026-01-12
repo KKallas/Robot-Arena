@@ -235,17 +235,25 @@ Physical Matches → Timeline Events → Train Simulator → Sim Matches → Com
 
 **What it is (feasible for one person):**
 - Mac Mini M4 running Python game engine (60 bots @ 4Hz physics)
+- **Godot Engine** (not Unreal) - fully open source, lightweight
+- **Cyberpunk lo-fi aesthetic** - pixelated bots, CRT scan lines, wireframe collision boxes
 - Writes identical events.csv format as physical matches
 - Same MicroPython code runs in simulator as on ESP32s
 - ML collision model trained offline on per-drone logs
-- Unreal Engine 5 interpolates positions to 60fps for smooth rendering
-- 2 video streams (top-down + bot POV)
+
+**Why deliberately lo-fi:**
+- Technical constraints (4Hz physics, single Mac Mini) become stylistic choices
+- Pixelated graphics mask imperfect interpolation
+- Visible collision boxes make AI decisions debuggable
+- Terminal-style UI feels like hacker tool, not toy
+- Open source stack (Godot + Python) = anyone can audit or contribute
 
 **Why it matters:**
 - Online competitions (global participation, no hardware needed)
 - Schools practice in simulator before renting physical fleet
 - Dataset buyers see validation metrics before purchasing
 - If simulator predicts accurately → dataset captures real physics
+- **Faster development** (6 months MVP vs 8-12 with Unreal)
 
 ---
 

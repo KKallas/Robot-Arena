@@ -1,72 +1,144 @@
 # Virtual Arena Simulator
 
-**Purpose:** Prove dataset value through high-fidelity simulation trained on real match data.
+**Purpose:** Lightweight, open-source simulator that validates dataset quality while looking intentionally lo-fi cyberpunk.
 
-## What It Does
+## What It Is
 
-Runs 60 virtual bots on Mac Mini M4 using:
-- Python physics engine (4Hz updates, 250ms intervals)
-- ML collision predictor (trained on real UART logs from Knowledge Commons)
-- Unreal Engine 5 (interpolates positions to 60fps rendering)
-- Same MicroPython code as physical bots (identical init.py)
+**Deliberately pixelated aesthetic.** Low-poly bots, CRT scan lines, pixel-perfect collision boxes, retro UI. Technical constraints (4Hz physics, single Mac Mini) become stylistic choices.
+
+**Think:** Early arcade games + Tron + hacker terminal. Not photorealistic - computational brutalism.
+
+## Core Technology Stack
+
+**All open source, runs on single Mac Mini M4:**
+
+- **Godot Engine** (not Unreal) - fully open source, lightweight, Python-like scripting
+- **Python physics engine** - 4Hz updates (250ms intervals), visible grid coordinates
+- **ML collision predictor** - trained on per-drone logs from real matches
+- **Same MicroPython code** - identical init.py runs in simulator as on ESP32s
+- **CSV timeline format** - writes identical events.csv as physical matches
+
+## The Aesthetic: Cyberpunk Data Visualization
+
+**Intentional lo-fi choices that hide resource constraints:**
+
+**Visual style:**
+- Chunky pixels (8x8 or 16x16 sprite-like bots)
+- Visible collision boxes (neon wireframes)
+- CRT scan lines and screen flicker
+- Monochrome or limited color palette (cyan/magenta/yellow)
+- Grid-based arena floor (visible coordinate system)
+- Retro terminal fonts for all UI text
+
+**Why this works:**
+- Low-poly models = easier to render 60 bots at once
+- Pixelated = masks imperfect physics interpolation
+- Wireframe collision boxes = shows AI decision boundaries
+- Grid coordinates = makes bot positions debuggable
+- Terminal aesthetic = feels like hacker tool, not toy
+
+**Reference inspirations:**
+- Uplink (2001) - hacker simulation aesthetic
+- SUPERHOT - minimalist 3D with visible timing
+- Hacknet - terminal interface meets real-time action
+- Early Virtua Fighter - blocky but functional
 
 ## Why It Matters
 
 **Proof of Dataset Quality:**
-When the simulator achieves 85%+ position accuracy, it demonstrates that the Knowledge Commons dataset captures genuine multi-agent physics—not just noise. This validation justifies €50k+ commercial licensing prices.
+When simulator achieves 85%+ position accuracy, proves dataset captures genuine multi-agent physics. Validates €50k+ commercial licensing.
 
 **Validation Metrics (Published Monthly):**
 - Position RMSE: Target >85% (within 10cm after 90 seconds)
 - Collision accuracy: Target >80% (velocity matching)
 - Goal detection: Target >85% (vision simulation)
 
-## Architecture
+**Open source validation:**
+- All code on GitHub
+- Anyone can audit prediction accuracy
+- Community can contribute improvements
+- No black-box simulation
+
+## Architecture: Open Source Stack
 
 See [ARCHITECTURE.md](../ARCHITECTURE.md) for complete technical details.
 
-**Key Components:**
+**Design principle:** Everything open source, everything lightweight, everything debuggable.
 
-### `/game-engine/`
-Python physics engine that:
-- Updates 60 bot positions every 250ms (4Hz loop)
-- Detects collisions via proximity checks
-- Uses ML model to predict collision outcomes
-- Sends positions to Unreal via WebSocket
+### `/game-engine/` (Python)
+Physics loop running at 4Hz:
+- Updates 60 bot positions every 250ms
+- Grid-based collision detection (visible in UI)
+- ML model predicts collision outcomes
+- Writes to events.csv (same format as physical matches)
+- Sends positions to Godot via WebSocket
 
-### `/unreal-integration/`
-Unreal Engine 5 project that:
+**Why Python:** Readable, debuggable, same language as match analysis tools. Not hidden in compiled binary.
+
+### `/godot-renderer/` (Godot Engine 4.x)
+Open-source game engine rendering:
 - Receives bot positions via WebSocket @ 4Hz
-- Interpolates to 60fps for smooth rendering
-- Generates 2 H.264 streams (top-down + POV)
-- Simple 3D models (focus on accuracy, not graphics)
+- Pixel art sprites or low-poly 3D models
+- CRT shader for scan lines and screen flicker
+- Wireframe collision box overlay
+- Grid floor with coordinate labels
+- 2 camera views (top-down + bot POV)
 
-### `/web-interface/`
-Flask app that:
-- Serves same 3-tab UI as physical bots
-- Handles virtual bot APIs (HTTP endpoints)
-- Allows operators to select POV camera
-- Provides match replay functionality
+**Why Godot:**
+- Fully open source (MIT license)
+- Lightweight (entire engine ~50MB)
+- GDScript similar to Python
+- Built-in shader system for retro effects
+- Cross-platform (Mac, Linux, Windows)
+- Active community
 
-### `/ml-models/`
-PyTorch collision predictor:
-- Trained on collision events from Knowledge Commons
+### `/web-interface/` (Flask + Terminal UI)
+Minimalist match control interface:
+- ASCII art dashboard (looks like tmux/screen)
+- Terminal-style command input
+- Real-time event log (scrolling text)
+- Monospace font, limited colors
+- Same 4-panel layout as physical matches
+
+**Aesthetic goal:** Feels like SSH session into match server, not polished web app.
+
+### `/ml-models/` (PyTorch)
+Collision predictor trained on per-drone logs:
 - Input: Pre-collision state (positions, velocities, masses)
 - Output: Post-collision velocities, damage states
-- Model file: ~500KB (deployable on M4 Neural Engine)
+- Model file: ~500KB
+- Inference: <1ms on M4 Neural Engine
+- Training notebook published on GitHub
 
-### `/deployment/`
-- Mac Mini M4 setup instructions
-- Docker compose (optional containerization)
-- System requirements and optimization guide
+**Open source:** Anyone can retrain on updated datasets, audit predictions, contribute improvements.
+
+### `/assets/`
+All visual assets open source:
+- Pixel art bot sprites (8x8, 16x16, 32x32)
+- CRT shader code (scan lines, chromatic aberration)
+- Grid floor texture with coordinate labels
+- Monospace terminal fonts
+- Color palettes (cyberpunk cyan/magenta/yellow)
+
+**License:** CC0 or MIT, anyone can fork and customize.
 
 ## Development Timeline
 
-**Single developer, part-time:**
-- Months 1-2: Python physics engine + collision detection
-- Months 3-4: Unreal scene + WebSocket position streaming
-- Months 5-6: ML collision model training pipeline
-- Months 7-8: Web interface + virtual bot API
-- **Total: 8 months MVP, 12 months production-ready**
+**Single developer, part-time (choosing lightweight stack accelerates timeline):**
+- Month 1: Python physics engine + grid collision detection
+- Month 2: Godot renderer + pixel art bot sprites + CRT shaders
+- Month 3: WebSocket integration + CSV event logging
+- Month 4: ML collision model training pipeline
+- Month 5: Flask terminal UI + match replay
+- Month 6: Polish, testing, documentation
+- **Total: 6 months MVP (vs 8-12 with Unreal)**
+
+**Why faster:**
+- Godot has built-in 2D/3D sprite system (no modeling needed)
+- Pixel art is faster than 3D modeling
+- Open source tools = no licensing/setup friction
+- Terminal UI is simpler than polished web frontend
+- Lo-fi aesthetic forgives imperfections
 
 ## Usage
 
