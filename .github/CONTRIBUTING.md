@@ -1,0 +1,169 @@
+# Contributing: LLM-Automatable Workflow
+
+This repo uses a structured issue format designed for autonomous agent processing.
+
+## For Humans Writing Issues
+
+### Golden Rules
+
+1. **One issue = one task.** If it takes more than 5 bullet points to describe, split it.
+2. **Link to files, not concepts.** Say `README.md:45-60` not "the section about bots."
+3. **Explicit boundaries.** Say what NOT to touch. Agents will over-help otherwise.
+4. **Testable acceptance.** If you can't write a grep/find command to verify, it's too vague.
+
+### Issue Template Explained
+
+```markdown
+## Context
+WHAT: Current state (link files)
+WHY: One sentence problem statement
+
+## Task
+ACTION: Verb (CREATE/UPDATE/DELETE/REFACTOR/VALIDATE)
+TARGET: Exact file paths
+DO: Numbered steps (1, 2, 3)
+DON'T: Explicit boundaries
+
+## Acceptance Criteria
+[ ] Checkboxes agent must verify before PR
+
+## Validation
+HOW: Bash command to test
+EXPECT: What success looks like
+
+## Dependencies
+BLOCKED BY: Other issues that must close first
+BLOCKS: Issues waiting on this one
+
+## Scope Limit
+SIZE: SMALL/MEDIUM/LARGE
+TIMEBOX: When to give up
+```
+
+### Good vs Bad Issues
+
+**Bad:**
+```
+Title: Fix the documentation
+Body: The docs are confusing, please improve them.
+```
+
+**Good:**
+```
+Title: [TASK] Update README.md to reflect autobattler-only format
+
+## Context
+**What exists now:**
+README.md:40-52 describes real-time pilot control during matches.
+
+**What's wrong:**
+We decided on pure autobattler format (no real-time control).
+Docs contradict this.
+
+## Task
+**Action:** UPDATE
+**Target files:**
+- `README.md`
+
+**Do this:**
+1. Remove references to "real-time control" in lines 40-52
+2. Replace with autobattler description: upload scripts → 90s autonomous → video
+3. Update "The Match" section to show 4 uploads (2 pilots + 2 hackers)
+
+**Do NOT do this:**
+- Don't change the business model section
+- Don't modify ARCHITECTURE.md (separate issue)
+
+## Acceptance Criteria
+- [ ] No instances of "real-time control" in README.md
+- [ ] "autobattler" appears at least once
+- [ ] Match format shows preparation → execution → output phases
+
+## Validation
+```bash
+grep -i "real-time control" README.md  # should return nothing
+grep -i "autobattler" README.md        # should return at least 1 match
+```
+
+**Expected result:** First grep empty, second grep has output
+
+## Dependencies
+**Blocked by:** none
+**Blocks:** #15, #16
+
+## Scope Limit
+**Estimated changes:** SMALL
+**Time box:** 15 minutes
+```
+
+## For LLM Agents
+
+### Processing Loop
+
+```
+1. GET next issue with label "llm-ready" (oldest first)
+2. READ all files in "Target files"
+3. EXECUTE steps in "Do this" (in order)
+4. CHECK each box in "Acceptance Criteria"
+5. RUN validation command
+6. IF all pass → CREATE PR
+7. IF blocked → COMMENT with blocker, add label "needs-human"
+8. MOVE to next issue
+```
+
+### PR Format
+
+```markdown
+Title: [TASK] Same as issue title
+
+Closes #[issue-number]
+
+## Changes
+- `file1.md`: [brief description]
+- `file2.md`: [brief description]
+
+## Validation Output
+[paste terminal output from validation command]
+
+## Checklist
+- [x] All acceptance criteria met
+- [x] Validation command passed
+- [x] No files modified outside Target files list
+```
+
+### When to Stop
+
+- Validation fails after 3 attempts → comment and flag
+- Task requires files not in "Target files" → comment and flag
+- Circular dependency detected → comment and flag
+- Time box exceeded → comment and flag
+
+### Labels
+
+| Label | Meaning |
+|-------|---------|
+| `llm-ready` | Agent can process this |
+| `needs-human` | Agent got stuck, human review needed |
+| `in-progress` | Agent is working on this |
+| `blocked` | Waiting on dependency |
+
+## For Reviewers
+
+### Merging Agent PRs
+
+1. Check validation output matches expected result
+2. Spot-check one change against issue spec
+3. Verify no out-of-scope changes
+4. Merge if clean, comment if not
+
+### Rejection Format
+
+```markdown
+Rejecting because:
+- [ ] Validation output doesn't match expected
+- [ ] Changed files outside Target files
+- [ ] Acceptance criteria #N not met: [explanation]
+- [ ] Other: [explanation]
+
+@agent please address and re-submit
+```
