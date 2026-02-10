@@ -1,37 +1,82 @@
 # Physical Bot Firmware
 
-**Purpose:** Software stack for SMARS bots with shared UART bus architecture.
+**Purpose:** Software stack for SMARS bots with Android phone + ESP32 UART-to-I2C bridge architecture.
 
 ## Hardware Stack
 
 ```
 ┌─────────────────────────────────────────┐
-│         Shared UART Bus                  │
-│     (921600 baud, all modules)          │
-│                                         │
-│  ┌─────────┐  ┌─────────┐  ┌────────┐ │
-│  │ M5 Cam  │  │ M5 Atom │  │Arduino │ │
-│  │ ESP32-S3│  │ ESP32   │  │ Nano   │ │
-│  └─────────┘  └─────────┘  └────────┘ │
-│      │             │            │      │
-│  (Web UI)     (Logic)      (Motors)    │
-│  (Logs all)                            │
+│    Android Phone (Termux + Flask)       │
+│    Central Controller (~€50 used)       │
+│         (Web UI, Python Logic)          │
+└──────────────────┬──────────────────────┘
+                   │ USB-OTG Serial Cable
+                   ▼
+┌─────────────────────────────────────────┐
+│    ESP32 UART-to-I2C Bridge             │
+│    (Interface Layer)                     │
+└──────────────────┬──────────────────────┘
+                   │ I2C Bus
+┌──────────────────┴──────────────────────┐
+│  ┌─────────┐  ┌─────────┐  ┌────────┐  │
+│  │ M5 Atom │  │Arduino  │  │Sensors │  │
+│  │ ESP32   │  │ Nano    │  │ (I2C)  │  │
+│  │(Sensors)│  │(Motors) │  │        │  │
+│  └─────────┘  └─────────┘  └────────┘  │
 └─────────────────────────────────────────┘
 ```
 
-**Key Concept:** Single shared UART bus where:
-- Everyone listens to all traffic
-- Modules ignore commands not meant for them
-- M5 Camera logs everything to SD card
-- Arduino processes commands 0x01-0x0E (motor control)
-- M5 Atom processes commands 0x0F (Custom type 0x01 - web UI commands)
+**Key Concept:** Android phone as central controller:
+- Phone runs Flask web server + Python logic (previously on M5 Camera/Atom)
+- USB-OTG serial connects phone to ESP32 bridge
+- ESP32 bridge translates UART commands to I2C for module communication
+- Arduino processes motor commands 0x01-0x0E via I2C
+- M5 Atom handles IMU sensors + mesh networking (optional)
+- **Scalable:** Add more ESP32 bridges for additional I/O ports
 
 ## Module Responsibilities
+
+### Android Phone (Termux) - Central Controller (`/android-termux/`)
+**Role:** Web server + Python logic + logger (replaces M5 Camera + most of M5 Atom logic)
+
+**Runs:**
+- Flask web server (3-tab interface)
+- Python application logic (formation behaviors, trigger management)
+- Serial communication via USB-OTG to ESP32 bridge
+- POV camera streaming (via phone's built-in camera)
+- Complete traffic logging to phone storage
+
+**HTTP Endpoints:**
+- `GET /` - Serve 3-tab interface
+- `POST /api/trigger` - Execute commands, send via serial to ESP32 bridge
+- `GET /api/camera` - Stream POV feed (MJPEG via phone camera)
+- `GET /api/logs` - Return recent serial log entries
+
+**Automatic Upload:**
+After each event, phone uploads serial logs to Knowledge Commons via WiFi.
+
+### ESP32 UART-to-I2C Bridge (`/esp32-bridge/`)
+**Role:** Interface layer between phone and hardware modules
+
+**Receives (from phone via USB-OTG):**
+- All command packets (0x00-0x0F)
+
+**Translates and routes:**
+- Motor commands (0x01-0x0E) to Arduino via I2C
+- Custom commands (0x0F) to M5 Atom via I2C
+- Status responses back to phone
+
+**Provides:**
+- Analog/digital I/O expansion
+- I2C bus master for module communication
+
+**Scalability:**
+Add more ESP32 bridges for additional I/O ports (phone can manage multiple via USB hub).
 
 ### Arduino Motor Controller (`/arduino-motor-controller/`)
 **Role:** Motor PWM control, encoder reading, battery monitoring
 
-**Listens for:**
+**Receives via I2C:**
 - 0x01 MOVE_FORWARD
 - 0x02 MOVE_BACKWARD
 - 0x03 TURN_LEFT
@@ -43,44 +88,23 @@
 **Ignores:**
 - 0x0F CUSTOM (not for motors)
 
-**Sends:**
+**Sends via I2C:**
 - 0x08 STATUS (battery voltage, encoder counts) @ 10Hz
 
-### M5 Atom Logic Brain (`/m5atom-micropython/`)
-**Role:** Pure application logic in vanilla MicroPython + custom init.py
+### M5 Atom Sensor Hub (`/m5atom-micropython/`) - Optional
+**Role:** IMU sensor reading + ESP-NOW mesh networking
 
-**Listens for:**
-- 0x0F CUSTOM type 0x01 (web UI commands from M5 Camera)
-- 0x08 STATUS (from Arduino, for position estimate)
+**Receives via I2C:**
+- 0x0F CUSTOM type 0x01 (sensor read requests)
 
-**Ignores:**
-- Motor commands (Arduino handles those)
+**Sends via I2C:**
+- IMU data (gyro, accelerometer)
+- Mesh network status
+- 0x0F CUSTOM type 0x06 (telemetry data)
 
-**Sends:**
-- 0x01-0x06 motor commands (to Arduino)
-- 0x0F CUSTOM type 0x06 (debug telemetry for M5 Camera logging)
+**Note:** Python logic that previously ran on M5 Atom now runs on the Android phone. M5 Atom is optional and focuses on sensor reading + mesh networking.
 
-**No HTTP server** - all networking handled by M5 Camera
-
-### M5 Camera Web Server (`/m5camera-webui/`)
-**Role:** Web UI + passive UART logger
-
-**Listens for:**
-- **All UART traffic** (logs everything to SD card)
-
-**Sends:**
-- 0x0F CUSTOM type 0x01 (web UI commands to M5 Atom)
-
-**HTTP Endpoints:**
-- `GET /` - Serve 3-tab interface
-- `POST /api/trigger` - Forward commands to M5 Atom via UART
-- `GET /api/camera` - Stream POV feed (MJPEG)
-- `GET /api/logs` - Return recent UART log entries
-
-**Automatic Upload:**
-After each event, M5 Camera uploads UART logs to Knowledge Commons via WiFi.
-
-## UART Protocol (`/uart-protocol/`)
+## Serial Protocol (`/serial-protocol/`)
 
 **16-Command Specification**
 - See [ARCHITECTURE.md](../ARCHITECTURE.md) for complete protocol details
@@ -88,70 +112,81 @@ After each event, M5 Camera uploads UART logs to Knowledge Commons via WiFi.
 - Commands 0x00-0x0E: Standard (motor control, status, etc.)
 - Command 0x0F: Custom (extensible for sensors, web UI, etc.)
 
+**Communication Layers:**
+- **Phone ↔ ESP32 Bridge:** USB-OTG serial (921600 baud)
+- **ESP32 Bridge ↔ Modules:** I2C bus (400kHz Fast Mode)
+
 **Custom Command Structure:**
 ```
 0x0F [type] [length_2B] [data]
 
 Types:
-0x01 - Web UI command (M5 Camera → M5 Atom)
+0x01 - Web UI command (Phone → Bridge → M5 Atom)
 0x02 - Lidar scan data (future)
 0x03 - Vision detection (future)
-0x06 - Debug telemetry (M5 Atom → M5 Camera for logging)
+0x06 - Debug telemetry (M5 Atom → Bridge → Phone for logging)
 ```
 
 ## Software Layers
 
 **Layer 0: Firmware (this directory)**
 - Low-level motor control, sensor reads
-- Built into Arduino/M5 Atom
+- Built into Arduino (motors), ESP32 bridge (translation), M5 Atom (sensors)
 
 **Layer 1: Python Automation**
-- User-defined functions in M5 Atom init.py
-- Uploaded via web UI (Tab 2)
+- User-defined functions run on Android phone (Termux)
+- Uploaded/edited via web UI (Tab 2)
+- Full Python 3 (not MicroPython) enables richer logic
 
 **Layer 2: JavaScript Orchestration**
 - Multi-bot coordination in browser (Tab 3)
-- Sends HTTP commands to multiple bots
+- Sends HTTP commands to multiple bot phones
 
 ## Development Workflow
 
 **Arduino:**
 1. Write C++ code in Arduino IDE
 2. Compile and upload to Arduino Nano
-3. Test UART communication with M5 Atom
+3. Test I2C communication with ESP32 bridge
 
-**M5 Atom:**
-1. Write Python in `init.py`
-2. Upload vanilla MicroPython firmware + init.py
-3. Test UART bus, ESP-NOW mesh
+**ESP32 Bridge:**
+1. Write C++ or MicroPython firmware
+2. Flash to ESP32 dev board
+3. Test USB-OTG serial + I2C translation
 
-**M5 Camera:**
-1. Write Python web server + HTML/JS UI
-2. Upload MicroPython firmware
-3. Test web UI, UART logging
+**M5 Atom (Optional):**
+1. Write MicroPython sensor/mesh code
+2. Upload vanilla MicroPython firmware
+3. Test I2C bus, ESP-NOW mesh
+
+**Android Phone:**
+1. Install Termux, Python, Flask
+2. Write Python web server + HTML/JS UI
+3. Test web UI, USB-OTG serial communication, logging
 
 ## Deployment
 
 **Rental Fleet:**
-- All 60 bots in fleet run identical firmware
+- All 60 bots in fleet run identical firmware (bridge + Arduino)
+- Android phones configured with identical Termux + Flask setup
 - Version tracked in Logistics Operations inventory
-- Updates deployed between events
+- Updates deployed between events (firmware via OTA, phone apps via WiFi)
 
 **Custom Mods:**
-- Pilots modify init.py (M5 Atom)
-- Upload via web UI or SD card
+- Pilots modify Python scripts on phone
+- Upload via web UI or direct Termux access
 - Document in Knowledge Commons for recognition
 
 ## Data Collection
 
-**UART Logs (Critical for Dataset):**
-- M5 Camera logs all bus traffic to SD card
-- Auto-uploads to Knowledge Commons after match
+**Serial Logs (Critical for Dataset):**
+- Android phone logs all serial traffic to phone storage
+- Auto-uploads to Knowledge Commons after match via WiFi
 - Collision events extracted for ML training
 - Complete communication record (every motor command, status update)
 
 **Why This Matters:**
-The UART logs are the raw data that proves the dataset captures real swarm physics. When the Virtual Arena Simulator is trained on these logs and achieves 85%+ accuracy, it validates the entire dataset for commercial licensing.
+The serial logs are the raw data that proves the dataset captures real swarm physics. When the Virtual Arena Simulator is trained on these logs and achieves 85%+ accuracy, it validates the entire dataset for commercial licensing.
 
 ---
 

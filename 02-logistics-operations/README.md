@@ -54,12 +54,12 @@ The hardware arm that enables the franchise model and funds the ecosystem. Any o
 ### `/fleet-designs/`
 
 **Phase 1: SMARS Swarm Fleets (Years 1-2)**
-- **60-bot competition fleet:** Complete SMARS builds with M5Stack Camera + M5 Atom
-- **Cost per fleet:** €3k hardware + €1k labor/assembly = €4k total
-- **Rental rate:** €2k/weekend → breakeven at 2 events, profit after
+- **60-bot competition fleet:** Complete SMARS builds with Android Phone (Termux) + ESP32 Bridge + M5 Atom (optional)
+- **Cost per fleet:** €6k hardware + €1k labor/assembly = €7k total
+- **Rental rate:** €2k/weekend → breakeven at 4 events, profit after
 - **Spares inventory:** 20% spare bots (12 extra) for quick replacement
-- **Charging infrastructure:** 60-bot charging station, 2-hour full charge cycle
-- **Transport cases:** Stackable pelican cases, each holds 10 bots
+- **Charging infrastructure:** 60-bot + 60-phone charging station, 2-hour full charge cycle
+- **Transport cases:** Stackable pelican cases, each holds 10 bots + phones
 
 **Phase 2: Custom Platform Fleets (Years 3+)**
 - **60-bot competition fleet:** 50cm weatherproof platforms with modular attachments
@@ -76,10 +76,11 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 
 **Base Module (€50 retail, €30 COGS, €20 margin):**
 - **Components:**
-  - ESP32 dev board (M5 Atom or equivalent)
-  - M5Stack Camera module (640x480@30fps)
+  - ESP32 dev board (UART-to-I2C bridge)
+  - USB-OTG serial cable (for Android phone connection)
   - Power distribution board (voltage regulation, battery management)
-  - MicroPython firmware pre-loaded (HTTP API compatible with arena system)
+  - Bridge firmware pre-loaded (compatible with Android phone + arena system)
+  - *Note: Used Android phone (~€50) purchased separately by user*
 - **Packaging:**
   - Quick-start guide with photos for 5 common obsolete robots (Roomba, RC car, robotic vacuum, toy tank, broken drone)
   - Wiring diagram card (laminated, waterproof)
@@ -92,10 +93,11 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 
 **Advanced Module (€120 retail, €75 COGS, €45 margin):**
 - **Everything in Base Module plus:**
-  - IMU sensor (gyroscope + accelerometer for multi-level arenas)
+  - M5 Atom with IMU sensor (gyroscope + accelerometer for multi-level arenas)
   - Ultrasonic sensors (obstacle detection, collision avoidance)
   - Upgraded motors (if original robot motors insufficient)
   - Advanced mesh networking firmware (resilient to hacker attacks)
+  - *Note: Used Android phone (~€50) purchased separately by user*
 - **Use Cases:**
   - Serious competitors optimizing resurrected robots for advanced divisions
   - Research labs testing swarm coordination on heterogeneous platforms
@@ -179,10 +181,10 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 
 **Maintenance Schedule:**
 - **After every event:**
-  - Visual inspection, charge all batteries
-  - Verify UART logs uploaded to Knowledge Commons (automatic via WiFi)
-  - Firmware update check (Arduino, M5 Atom, M5 Camera)
-  - Clear SD card space on M5 Camera modules (logs auto-upload, then purge)
+  - Visual inspection, charge all batteries (bots + phones)
+  - Verify serial logs uploaded to Knowledge Commons (automatic via WiFi from phones)
+  - Firmware update check (Arduino, ESP32 bridge, M5 Atom)
+  - Clear phone storage (logs auto-upload, then purge)
 - **Monthly:** Deep clean, motor bearing check, sensor calibration
 - **Quarterly:** Replace worn components (wheels, sensors), battery health test
 - **Annually:** Full refurbishment, integrate successful custom mods from pilots

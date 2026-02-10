@@ -44,10 +44,12 @@ This data trains the next generation of AI systems for physical-world automation
 
 **Victory condition:** Most bots in opponent's goal circle when timer hits zero
 
-**The Bots:** €50 open-source SMARS robots (3D-printable) running MicroPython on ESP32
-- M5 Atom controller + M5Stack Camera
-- WiFi-only communication (no mesh, no LoRa)
-- Pilots modify firmware, hardware, sensors within spec limits
+**The Bots:** Open-source SMARS robots (3D-printable) with Android phone controller
+- Used Android phone (~€50) running Termux + Flask as central controller
+- ESP32 UART-to-I2C bridge for hardware communication
+- M5 Atom for IMU sensors + mesh networking (optional)
+- WiFi-only communication (via phone hotspot)
+- Pilots modify Python scripts, hardware, sensors within spec limits
 
 ### Why Autobattler Format
 
@@ -358,10 +360,11 @@ Sports league infrastructure and media production engine
 
 **The Platform:**
 - SMARS chassis (open-source, 3D-printable)
-- M5 Atom (ESP32) + M5Stack Camera
-- WiFi-only communication
-- MicroPython firmware
-- €50/bot build cost
+- Used Android phone (~€50) running Termux + Flask
+- ESP32 UART-to-I2C bridge + M5 Atom (optional, for IMU/mesh)
+- WiFi communication via phone hotspot
+- Python on phone (full Python 3, not MicroPython)
+- ~€100/bot build cost (including phone)
 
 **Entry Pathways:**
 1. **Rental:** Show up, pay €50-100, compete same day

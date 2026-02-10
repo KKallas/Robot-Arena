@@ -31,9 +31,9 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 
 **`/smars-base/`** - Phase 1 Competition Platform (Years 1-2)
 - Official SMARS specification and reference design
-- M5Stack Camera + M5 Atom integration guide
-- MicroPython firmware repository
-- Complete BOM with supplier links (€50/bot)
+- Android Phone (Termux) + ESP32 Bridge + M5 Atom integration guide
+- Python scripts for phone, bridge firmware repository
+- Complete BOM with supplier links (~€100/bot including phone)
 - 3D printable STL files (CC-BY-SA license)
 
 **`/pilot-modifications/`** - Community Improvements
@@ -114,9 +114,9 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 **The training data goldmine.** Thousands of hours of 60-bot multi-agent behavior under adversarial conditions, with complete hardware/software documentation.
 
 **`/match-replays/`** - Full Sensor Logs (Licensed)
-- **UART logs** from M5 Camera SD cards (complete bot communication record)
+- **Serial logs** from Android phone storage (complete bot communication record)
 - 60× robot position/velocity trajectories reconstructed from logs
-- 60× camera feeds (saved separately, referenced in metadata)
+- 60× camera feeds (from phone cameras, saved separately, referenced in metadata)
 - Network traffic captures (pcap format, includes hacker attacks)
 - Pilot input logs (button presses vs. AI prompts, timestamps)
 - Match outcomes (scores, formations used, winner)
