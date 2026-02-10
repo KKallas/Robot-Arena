@@ -35,9 +35,9 @@ Robot Arena is a competitive robotics sport with three main pillars (Knowledge C
 │         │  Physical Firmware  │   │ Virtual Simulator  │       │
 │         │                     │   │                    │       │
 │         │ - Arduino Motor     │   │ - Python Emulator  │       │
-│         │ - M5 Atom Logic     │   │ - Game Server      │       │
-│         │ - M5 Camera WebUI   │   │ - Collision LUT    │       │
-│         │ - UART Bus Protocol │   │ - Blender Render   │       │
+│         │ - ESP32 I/O Bridge  │   │ - Game Server      │       │
+│         │ - Android/Termux    │   │ - Collision LUT    │       │
+│         │ - USB-OTG Serial    │   │ - Blender Render   │       │
 │         └─────────────────────┘   └────────────────────┘       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -47,7 +47,7 @@ Robot Arena is a competitive robotics sport with three main pillars (Knowledge C
 
 ## Physical Bot Architecture
 
-### Hardware Stack - Shared UART Bus
+### Hardware Stack - Android Phone + ESP32 UART-to-I2C Bridge
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -55,115 +55,151 @@ Robot Arena is a competitive robotics sport with three main pillars (Knowledge C
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │          Shared UART Bus (921600 baud, broadcast)        │  │
-│  │                 All modules listen, selective ignore      │  │
+│  │              Android Phone (Termux + Flask)              │  │
+│  │                    Central Controller                     │  │
+│  │           (~€50 used phone, runs Python/Flask)           │  │
+│  └────────────────────────┬─────────────────────────────────┘  │
+│                           │ USB-OTG Serial Cable               │
+│                           ▼                                     │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │         ESP32 UART-to-I2C Bridge (Primary)               │  │
+│  │   - Receives UART commands from phone                    │  │
+│  │   - Translates to I2C for module communication           │  │
+│  │   - Provides analog/digital I/O expansion                │  │
+│  │   - Scalable: add more ESP32 bridges for more ports      │  │
+│  └────────────────────────┬─────────────────────────────────┘  │
+│                           │ I2C Bus                            │
+│  ┌────────────────────────┴─────────────────────────────────┐  │
+│  │                    I2C Bus (Modules)                      │  │
 │  │                                                           │  │
 │  │    ┌─────────────┐   ┌─────────────┐   ┌────────────┐   │  │
-│  │    │ M5 Camera   │   │  M5 Atom    │   │  Arduino   │   │  │
-│  │    │ ESP32-S3    │   │  ESP32      │   │  Nano/Pro  │   │  │
-│  │    └──────┬──────┘   └──────┬──────┘   └─────┬──────┘   │  │
-│  │           │                 │                 │          │  │
-│  │           └─────────────────┴─────────────────┘          │  │
-│  │                  TX/RX connected to all                  │  │
-│  │                                                           │  │
-│  │  Optional Sensor Modules (also on same bus):             │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐               │  │
-│  │  │  Lidar   │  │  Vision  │  │  Other   │               │  │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘               │  │
-│  │       └─────────────┴──────────────┘                     │  │
+│  │    │  M5 Atom    │   │  Arduino    │   │  Sensors   │   │  │
+│  │    │  ESP32      │   │  Nano/Pro   │   │  (I2C)     │   │  │
+│  │    │  (Logic)    │   │  (Motors)   │   │            │   │  │
+│  │    └─────────────┘   └─────────────┘   └────────────┘   │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  Power: 7.4V LiPo (2S) → 5V Buck → All Modules                 │
-│  Weight: ~200g total (within competition spec)                  │
+│  Weight: ~250g total (within competition spec)                  │
 │  Cost: €50-120 depending on configuration                       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Insight:** Single UART bus, all modules share TX/RX lines. Each module:
-- **Listens** to all packets
-- **Ignores** commands not meant for them
-- **Transmits** when needed
+**Key Architecture Change:** Android phone replaces M5 Camera as central controller:
+- **Android Phone (Termux):** Runs Flask web server, Python logic, WiFi AP
+- **USB-OTG Serial Cable:** Connects phone to ESP32 bridge
+- **ESP32 UART-to-I2C Bridge:** Interface layer between phone and hardware modules
+- **Scalability:** Add more ESP32 bridges for additional I/O ports
 
 **Example Traffic Flow:**
 ```
-M5 Camera sends: [STX][0x0F Custom][length][web_command_data][CRC]
-  → M5 Atom sees it, parses custom data, executes
+Phone sends via USB-OTG: [STX][0x0F Custom][length][web_command_data][CRC]
+  → ESP32 Bridge receives, translates to I2C
+  → M5 Atom sees it on I2C, parses custom data, executes
   → Arduino sees it, command type is Custom (not 0x01-0x0E), ignores
 
-M5 Atom sends: [STX][0x01 MOVE_FORWARD][duration][speed][CRC]
-  → Arduino sees it, executes motor command
-  → M5 Camera sees it, logs to SD card
+M5 Atom sends via I2C: [STX][0x01 MOVE_FORWARD][duration][speed][CRC]
+  → ESP32 Bridge forwards to Arduino
+  → Arduino executes motor command
+  → ESP32 Bridge reports back to phone for logging
 
 Arduino sends: [STX][0x08 STATUS][battery_voltage][encoder_data][CRC]
-  → M5 Atom sees it, updates position estimate
-  → M5 Camera sees it, logs to SD card
+  → ESP32 Bridge receives, forwards to phone
+  → Phone logs to storage, updates UI
 ```
 
 ---
 
 ### Module Responsibilities
 
-#### **M5 Camera Module (ESP32-S3)**
-**Role:** Web Server + Passive Logger
+#### **Android Phone (Termux) - Central Controller**
+**Role:** Web Server + Logic Brain + Logger
 
 **Hardware:**
-- ESP32-S3 (dual-core, 8MB PSRAM)
-- OV2640 camera (640x480 @ 30fps)
-- SD card slot (for logging)
-- UART TX/RX connected to shared bus
+- Used Android phone (~€50 budget)
+- USB-OTG serial cable (connects to ESP32 bridge)
+- Phone's built-in camera (for POV feed)
+- Phone's storage (for logging)
 
 **Software:**
-- MicroPython with web server
-- WiFi Access Point (`Bot-XX`, password protected)
-- 3-tab web interface (HTML/CSS/JS served from flash)
-- UART packet logger (saves **everything** to SD card)
-- Camera streamer (MJPEG over HTTP)
+- Termux (Linux environment on Android)
+- Python 3 + Flask web server
+- WiFi Access Point (`Bot-XX`, via phone's hotspot)
+- 3-tab web interface (HTML/CSS/JS served from phone)
+- Serial packet logger (saves **everything** to phone storage)
+- Camera streamer (MJPEG over HTTP via phone camera)
 - HTTP API for external control
 
 **Responsibilities:**
 - Serve web UI to operators (3-tab interface)
-- Stream POV camera feed (640x480 @ 30fps)
-- **Listen to all UART traffic**, log everything to SD card
+- Stream POV camera feed (via phone's camera)
+- **Run all Python logic** (previously on M5 Atom)
 - Parse HTTP requests from operators
-- Send commands to bus as **Custom (0x0F)** type
-- Store logs to SD card (timestamped, sequential files)
+- Send commands via USB-OTG serial to ESP32 bridge
+- Store logs to phone storage (timestamped, sequential files)
 
-**UART Behavior:**
-- **TX:** Sends Custom commands (web UI triggers)
-- **RX:** Logs all bus traffic (motor commands, status, sensor data, everything)
+**Serial Behavior (USB-OTG):**
+- **TX:** Sends Custom commands (web UI triggers) + motor commands
+- **RX:** Receives all bridge traffic (status, sensor data, everything) for logging
+
+---
+
+#### **ESP32 UART-to-I2C Bridge**
+**Role:** Interface Layer between Phone and Hardware
+
+**Hardware:**
+- ESP32 dev board (any variant)
+- USB-OTG connection to phone
+- I2C bus connection to modules
+- Analog/digital I/O pins available
+
+**Software:**
+- Arduino C++ or MicroPython firmware
+- Serial-to-I2C translator
+- Packet routing logic
+
+**Responsibilities:**
+- Receive UART commands from phone via USB-OTG
+- Translate and forward to I2C bus for modules
+- Collect responses from I2C devices
+- Forward status/sensor data back to phone
+- Provide analog/digital I/O expansion
+
+**Scalability:**
+- Add more ESP32 bridges for additional I/O ports
+- Each bridge handles a subset of modules
+- Phone manages multiple bridges via USB hub if needed
 
 ---
 
 #### **M5 Atom (ESP32)**
-**Role:** Pure Logic Brain
+**Role:** Sensor Hub + Mesh Coordinator
 
 **Hardware:**
 - ESP32-PICO-D4 (dual-core, 4MB flash)
 - MPU6886 IMU (gyro + accelerometer)
 - RGB LED (status indicator)
-- UART TX/RX connected to shared bus
+- I2C connection to ESP32 bridge
 
 **Software:**
 - **Vanilla MicroPython** (official ESP32 port)
-- **Custom init.py** (your application logic)
-  - UART bus listener (filters for Custom commands from Camera)
-  - Trigger queue manager
+- **Custom init.py** (sensor processing)
+  - I2C bus listener (receives commands from ESP32 bridge)
   - Sensor fusion (IMU + encoders → position)
-  - ESP-NOW mesh networking (separate from UART bus)
-  - User Python code executor
+  - ESP-NOW mesh networking (separate from I2C bus)
 
 **Responsibilities:**
-- Listen to UART bus for Custom (0x0F) commands from M5 Camera
-- Execute user-defined Python behaviors (Layer 1)
-- Manage trigger queue (queue motor commands with timing)
+- Receive commands via I2C from ESP32 bridge
+- Read IMU sensor data, send to phone via bridge
 - Fuse sensor data (IMU + Arduino status → position estimate)
-- Coordinate with other bots via ESP-NOW mesh (not UART)
-- Send motor commands to bus as standard types (0x01-0x0E)
-- Send telemetry/logs back to bus as Custom (0x0F) type
+- Coordinate with other bots via ESP-NOW mesh
+- Send telemetry back via I2C bridge to phone
 
-**UART Behavior:**
-- **TX:** Sends motor commands (0x01-0x06), status queries (0x08), Custom logs
-- **RX:** Listens for Custom (0x0F) from Camera, STATUS (0x08) from Arduino
+**I2C Behavior:**
+- **TX:** Sends sensor data, telemetry, mesh network info
+- **RX:** Receives commands from ESP32 bridge (originated from phone)
+
+**Note:** Python logic that previously ran on M5 Atom now runs on the Android phone. M5 Atom focuses on sensor reading and mesh networking.
 
 ---
 
@@ -174,37 +210,41 @@ Arduino sends: [STX][0x08 STATUS][battery_voltage][encoder_data][CRC]
 - ATmega328P @ 16MHz
 - 2x PWM outputs (motor control)
 - 2x interrupt pins (encoder inputs)
-- UART TX/RX connected to shared bus
+- I2C connection to ESP32 bridge
 - Analog input (battery voltage)
 
 **Software:**
 - Arduino C++ (compiled firmware)
-- UART bus listener (filters for commands 0x01-0x0E only)
+- I2C slave listener (receives commands via bridge)
 - Motor PWM driver (precise timing)
 - Wheel encoder reader (speed feedback)
 - Battery monitor (voltage + state of charge)
 - Emergency stop handler
 
 **Responsibilities:**
-- Listen to UART bus for motor commands (0x01-0x06, 0x0A emergency stop)
+- Receive motor commands via I2C from ESP32 bridge (0x01-0x06, 0x0A emergency stop)
 - Execute motor commands with precise timing
 - Read wheel encoders (odometry)
 - Monitor battery state
-- Send status updates to bus (0x08 STATUS) at 10Hz
+- Send status updates via I2C (0x08 STATUS) at 10Hz
 
-**UART Behavior:**
-- **TX:** Sends STATUS (0x08) packets periodically
-- **RX:** Listens only for commands 0x01-0x0E, **ignores Custom (0x0F)**
+**I2C Behavior:**
+- **TX:** Sends STATUS (0x08) packets periodically to bridge
+- **RX:** Receives motor commands 0x01-0x0E from bridge
 
 ---
 
-### UART Protocol (16-Command Specification)
+### Serial Protocol (16-Command Specification)
 
-**Bus Configuration:**
+**Phone-to-Bridge Configuration (USB-OTG Serial):**
 - Baud rate: 921600 (115 KB/s effective)
-- Topology: **Shared bus** (all modules TX/RX connected together)
-- Flow: Broadcast - everyone hears everything
-- Collision avoidance: Simple (modules transmit at different rates)
+- Topology: Point-to-point (phone ↔ ESP32 bridge)
+- Flow: Request/response + event notifications
+
+**Bridge-to-Modules Configuration (I2C Bus):**
+- Speed: 400kHz (Fast Mode)
+- Topology: Multi-master capable, typically single master (ESP32 bridge)
+- Addressing: Each module has unique I2C address
 
 **Packet Format:**
 ```
@@ -242,12 +282,13 @@ CRC8:    Simple checksum (polynomial 0x07)
 
 **Command Handling by Module:**
 ```
-┌──────────┬─────────────┬───────────┬────────────┐
-│ Command  │ M5 Camera   │ M5 Atom   │ Arduino    │
-├──────────┼─────────────┼───────────┼────────────┤
-│ 0x00-0x0E│ Log only    │ May listen│ Execute    │
-│ 0x0F     │ Send/Log    │ Execute   │ Ignore     │
-└──────────┴─────────────┴───────────┴────────────┘
+┌──────────┬─────────────┬───────────┬────────────┬────────────┐
+│ Command  │ Phone       │ ESP32     │ M5 Atom    │ Arduino    │
+│          │ (Termux)    │ Bridge    │            │            │
+├──────────┼─────────────┼───────────┼────────────┼────────────┤
+│ 0x00-0x0E│ Send/Log    │ Route     │ May listen │ Execute    │
+│ 0x0F     │ Send/Log    │ Route     │ Execute    │ Ignore     │
+└──────────┴─────────────┴───────────┴────────────┴────────────┘
 ```
 
 **Custom Command (0x0F) Structure:**
@@ -259,22 +300,22 @@ Payload format for CUSTOM:
 └──────────┴────────┴────────────────┘
 
 Type IDs:
-0x01 - Web UI command (from M5 Camera → M5 Atom)
-0x02 - Lidar scan data (from Lidar → M5 Atom, Camera logs)
-0x03 - Vision detection (from Vision → M5 Atom, Camera logs)
-0x04 - Mesh network packet (M5 Atom → broadcast for logging)
-0x05 - Formation coordination (M5 Atom → broadcast)
-0x06 - Debug telemetry (M5 Atom → Camera for logging)
+0x01 - Web UI command (from Phone → ESP32 Bridge → M5 Atom)
+0x02 - Lidar scan data (from Lidar → Bridge → Phone logs)
+0x03 - Vision detection (from Vision → Bridge → Phone logs)
+0x04 - Mesh network packet (M5 Atom → Bridge → Phone for logging)
+0x05 - Formation coordination (Phone → Bridge → broadcast)
+0x06 - Debug telemetry (M5 Atom → Bridge → Phone for logging)
 ...
 0xFF - User-defined
 ```
 
 **Example Custom Type 0x01 (Web UI Command):**
 ```
-M5 Camera receives HTTP POST /api/trigger:
+Phone (Termux Flask) receives HTTP POST /api/trigger:
   {command: "move_forward", duration: 2000, speed: 80}
 
-M5 Camera serializes to UART:
+Phone serializes to USB-OTG serial:
   [0x02][0x0F][0x0A][0x01][0x00 0x06]["python_cmd_bytes"][CRC]
 
   0x0F = Custom command
@@ -283,18 +324,21 @@ M5 Camera serializes to UART:
   0x00 0x06 = Data length (6 bytes)
   "python_cmd_bytes" = JSON or compact binary encoding
 
-M5 Atom sees this on bus:
+ESP32 Bridge receives via USB-OTG:
+  - Parses packet, routes to I2C bus
+  - M5 Atom receives via I2C
+
+M5 Atom sees this on I2C:
   - Checks command type: 0x0F (Custom)
   - Checks custom type: 0x01 (for me!)
   - Parses data: move_forward(2000, 80)
-  - Queues trigger
+  - Sends motor command to bridge
 
-Arduino sees this on bus:
-  - Checks command type: 0x0F (Custom, not for me)
-  - **Ignores entirely**
+Arduino receives motor command via I2C from bridge:
+  - Executes motor command
 
-M5 Camera sees this on bus (its own packet):
-  - Logs to SD card anyway (complete bus record)
+Phone logs all traffic:
+  - Stores to phone storage (complete communication record)
 ```
 
 ---
@@ -320,25 +364,25 @@ bot.sensors.imu()          # {gyro_xyz, accel_xyz, temp}
 bot.sensors.battery()      # {voltage, percent, time_left} from Arduino STATUS
 bot.sensors.distance()     # Ultrasonic/ToF (if equipped, via Custom)
 bot.sensors.light()        # Ambient light (if equipped, via Custom)
-bot.sensors.camera_frame() # 640x480 JPEG (from M5 Camera web UI)
+bot.sensors.camera_frame() # 640x480 JPEG (from phone camera)
 ```
 
 **State & Diagnostics:**
 ```python
 bot.position.get()         # {x, y, theta} from M5 Atom dead reckoning
-bot.network.rssi()         # WiFi signal (from M5 Camera)
+bot.network.rssi()         # WiFi signal (from phone)
 bot.diagnostics.self_test() # Pre-match validation
-bot.get_logs(seconds=120)  # Last 120s (from M5 Camera SD card)
+bot.get_logs(seconds=120)  # Last 120s (from phone storage)
 ```
 
 ---
 
-#### **Layer 1: Python Automation (MicroPython on M5 Atom)**
-User-defined in web interface Tab 2, uploaded as Custom (0x0F) command.
+#### **Layer 1: Python Automation (Python on Android/Termux)**
+User-defined in web interface Tab 2, executed on the Android phone.
 
 **Example: Formation Behaviors**
 ```python
-# Defined in web IDE Tab 2, sent from M5 Camera to M5 Atom
+# Defined in web IDE Tab 2, executed on Android phone (Termux)
 def square_pattern():
     for i in range(4):
         send_to_bus(MOVE_FORWARD, duration=1000, speed=80)
@@ -370,9 +414,9 @@ def collision_avoidance():
         time.sleep(0.05)
 
 def send_to_bus(cmd, **params):
-    """Helper: Send command to shared UART bus"""
+    """Helper: Send command via USB-OTG serial to ESP32 bridge"""
     packet = serialize_command(cmd, params)
-    uart.write(packet)
+    serial_port.write(packet)  # USB-OTG serial to ESP32 bridge
 ```
 
 **UI Result:** Buttons appear in Tab 2 - `[Square Pattern]` `[Follow Leader]` `[Avoid Obstacles]`
@@ -380,7 +424,7 @@ def send_to_bus(cmd, **params):
 ---
 
 #### **Layer 2: JavaScript Multi-Bot Orchestration (Browser)**
-Runs in browser (web interface Tab 3), sends HTTP to multiple M5 Camera modules.
+Runs in browser (web interface Tab 3), sends HTTP to multiple Android phone controllers.
 
 **Example: Swarm Formations**
 ```javascript
@@ -432,21 +476,21 @@ async function defensiveCircle(centerX, centerY, radius) {
 
 ### Web Interface (3-Tab Design)
 
-Served by M5 Camera module, accessible at `http://192.168.4.1` (WiFi AP).
+Served by Android phone (Termux Flask), accessible at `http://192.168.4.1` (WiFi AP via phone hotspot).
 
 **Tab 1: Manual Operation**
-- Live 640x480 POV camera feed (from M5 Camera OV2640)
+- Live POV camera feed (from phone's camera)
 - Arrow buttons (↑↓←→) for manual driving
 - Real-time sensor readouts (battery, IMU, distance)
-- Status indicators (position, UART bus activity, errors)
-- All button presses → HTTP POST to `/api/trigger` → Custom (0x0F) to UART bus
+- Status indicators (position, serial bus activity, errors)
+- All button presses → HTTP POST to `/api/trigger` → Custom (0x0F) via USB-OTG to ESP32 bridge
 
 **Tab 2: Python Code Editor**
 - Syntax-highlighted editor (CodeMirror or Monaco)
-- Shows current user functions stored on M5 Atom
-- Upload button → sends code via HTTP → Custom (0x0F type 0x01) to M5 Atom
-- Execute button → calls function via HTTP → Custom command
-- Console output shows results (M5 Atom sends debug via Custom type 0x06, Camera logs and displays)
+- Shows current user functions stored on phone
+- Upload button → saves code to phone storage
+- Execute button → runs Python function on phone → sends commands via serial
+- Console output shows results (phone logs all traffic)
 - Creates buttons for defined functions
 
 **Tab 3: Swarm Orchestration**
@@ -454,7 +498,7 @@ Served by M5 Camera module, accessible at `http://192.168.4.1` (WiFi AP).
 - Formation preset buttons
 - JavaScript code editor for custom orchestration
 - Top-down arena canvas (shows bot positions from mesh network data)
-- Execute swarm commands in parallel (multiple HTTP requests to different bots)
+- Execute swarm commands in parallel (multiple HTTP requests to different bot phones)
 
 ---
 
@@ -479,10 +523,11 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 │  │  60 Virtual Bots (Python Processes)                       │  │
 │  │                                                           │  │
 │  │  Each bot emulates:                                       │  │
-│  │  - M5 Camera (Flask web server, same 3-tab UI)           │  │
-│  │  - M5 Atom (vanilla MicroPython + init.py, same code)    │  │
+│  │  - Android Phone (Flask web server, same 3-tab UI)       │  │
+│  │  - ESP32 Bridge (serial-to-I2C translation)              │  │
+│  │  - M5 Atom (sensor hub, mesh networking)                 │  │
 │  │  - Arduino (motor commands → game server)                │  │
-│  │  - Shared UART bus (virtual message queue)               │  │
+│  │  - USB-OTG serial + I2C bus (virtual message queue)      │  │
 │  │  - Sensors (simulated with realistic noise)              │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
@@ -539,12 +584,12 @@ import queue
 virtual_uart_bus = queue.Queue()
 
 class VirtualBot:
-    """Emulates M5 Camera + M5 Atom + Arduino stack + shared UART bus"""
+    """Emulates Android Phone + ESP32 Bridge + M5 Atom + Arduino stack"""
 
-    def __init__(self, bot_id, game_server, uart_bus):
+    def __init__(self, bot_id, game_server, serial_bus):
         self.id = bot_id
         self.game_server = game_server  # Game server (no physics engine)
-        self.uart_bus = uart_bus  # Shared message queue
+        self.serial_bus = serial_bus  # Virtual USB-OTG + I2C message queue
 
         self.position = [0, 0, 0]  # x, y, theta
         self.velocity = [0, 0]
@@ -552,44 +597,44 @@ class VirtualBot:
         # Emulate M5 Atom user functions (Layer 1)
         self.user_functions = {}
 
-        # Virtual SD card log
-        self.uart_log = []
+        # Virtual phone storage log
+        self.serial_log = []
 
         # Start components
-        self.start_uart_listener()
+        self.start_serial_listener()
         self.start_web_server()
 
-    def start_uart_listener(self):
-        """Background thread: listen to shared UART bus (like physical bus)"""
+    def start_serial_listener(self):
+        """Background thread: listen to virtual serial bus (like physical USB-OTG + I2C)"""
         def listen():
             while True:
-                packet = self.uart_bus.get()  # Block until message
+                packet = self.serial_bus.get()  # Block until message
 
-                # M5 Camera behavior: log everything
-                self.uart_log.append(packet)
+                # Phone behavior: log everything
+                self.serial_log.append(packet)
 
-                # M5 Atom behavior: parse Custom commands
+                # Execute commands (phone runs the logic)
                 if packet['cmd'] == 0x0F and packet['custom_type'] == 0x01:
-                    # Web UI command for me
+                    # Web UI command - execute on phone
                     self.execute_command(packet['data'])
 
-                # Arduino behavior: parse motor commands
+                # Route motor commands to Arduino emulator
                 if packet['cmd'] in [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]:
                     self.execute_motor_command(packet)
 
         threading.Thread(target=listen, daemon=True).start()
 
     def send_to_bus(self, cmd, **params):
-        """Send packet to shared UART bus (all virtual bots hear it)"""
+        """Send packet via virtual serial bus (USB-OTG to ESP32 bridge)"""
         packet = {
             'sender': self.id,
             'cmd': cmd,
             'params': params,
             'timestamp': time.time()
         }
-        self.uart_bus.put(packet)
+        self.serial_bus.put(packet)
 
-    # Layer 0 API (same as physical M5 Atom init.py)
+    # Layer 0 API (same as physical Android phone Python code)
     def move_forward(self, duration_ms, speed_percent):
         # Send to UART bus (Arduino emulator will see it)
         self.send_to_bus(0x01, duration=duration_ms, speed=speed_percent)
@@ -612,14 +657,14 @@ class VirtualBot:
             'temp': 25.0 + np.random.normal(0, 0.5)
         }
 
-    # Web server (emulates M5 Camera)
+    # Web server (emulates Android phone Flask server)
     def start_web_server(self):
         app = Flask(__name__)
 
         @app.route('/api/trigger', methods=['POST'])
         def trigger():
             cmd = request.json
-            # M5 Camera behavior: send as Custom (0x0F) to UART bus
+            # Phone behavior: send as Custom (0x0F) via serial to ESP32 bridge
             self.send_to_bus(0x0F, custom_type=0x01, data=cmd)
             return {'status': 'ok'}
 
@@ -629,13 +674,13 @@ class VirtualBot:
 
         @app.route('/api/camera')
         def camera_feed():
-            # POV frames rendered offline by Blender after match
+            # POV frames rendered offline by Blender after match (emulates phone camera)
             return Response(b'', mimetype='image/jpeg')
 
         @app.route('/api/logs')
         def get_logs():
-            # Return UART log (like reading SD card)
-            return jsonify(self.uart_log[-1200:])  # Last 120s @ 10Hz
+            # Return serial log (like reading phone storage)
+            return jsonify(self.serial_log[-1200:])  # Last 120s @ 10Hz
 
         @app.route('/')
         def index():
@@ -677,7 +722,7 @@ class MLPredictor:
     def build_from_matches(self, match_logs_path):
         """
         Load from /01-knowledge-commons/ml-datasets/match-replays/
-        Parse UART logs from M5 Camera SD cards
+        Parse serial logs from Android phone storage
         """
         for log_file in glob(f'{match_logs_path}/*.log'):
             match_id = extract_match_id(log_file)
@@ -828,7 +873,7 @@ battle-2026-01-07-001/
 **Blender reads complete timeline after match, renders offline.**
 
 **Camera Outputs:**
-- 60 POV cameras (one per bot, 640x480 @ 30fps, matches physical OV2640)
+- 60 POV cameras (one per bot, 640x480 @ 30fps, matches physical phone cameras)
 - 1 overhead camera (top-down arena view, 1920x1080 @ 60fps)
 - H.264/H.265 encoding via Blender's built-in encoder
 - Exported as MP4/WebM video files
@@ -850,7 +895,7 @@ battle-2026-01-07-001/
 
 Physical Matches (Real Arena)
     ↓
-UART Logs (M5 Camera SD cards) + Camera Feeds
+Serial Logs (Android Phone storage) + Camera Feeds
     ↓
 Knowledge Commons Upload
     ↓
@@ -880,19 +925,22 @@ More Competitors → More Physical Matches
 ### Physical Bot (Per Unit)
 
 **Hardware:**
+- Used Android phone: ~€50 (central controller, runs Termux + Flask)
+- USB-OTG serial cable: €5-10
+- ESP32 UART-to-I2C bridge: €5-10
 - Arduino Nano: €3-5
-- M5 Atom ESP32: €12-15
-- M5 Camera ESP32-S3: €15-20
+- M5 Atom ESP32: €12-15 (optional, for IMU/mesh)
 - Motors + driver: €8-10
 - Battery (7.4V 1000mAh): €8-12
 - Chassis (3D printed): €5-8
-- **Total: €50-70 per bot**
+- **Total: €95-125 per bot**
 
 **Software:**
-- Arduino IDE (C++ compilation)
-- MicroPython (vanilla ESP32 port + your init.py for M5 Atom)
-- MicroPython (web server for M5 Camera)
-- Web UI (HTML/CSS/JS served from M5 Camera flash)
+- Arduino IDE (C++ compilation for Arduino + ESP32 bridge)
+- Termux on Android (Linux environment)
+- Python 3 + Flask (web server on phone)
+- MicroPython (for M5 Atom sensor hub, optional)
+- Web UI (HTML/CSS/JS served from phone)
 
 ---
 
@@ -922,7 +970,7 @@ More Competitors → More Physical Matches
 ## Integration Points
 
 ### Knowledge Commons
-- Physical bots upload UART logs (from M5 Camera SD cards)
+- Physical bots upload serial logs (from Android phone storage)
 - Collision events extracted from logs
 - ML models trained on collision dataset
 - Sim-to-real validation metrics published
@@ -930,8 +978,8 @@ More Competitors → More Physical Matches
 
 ### Logistics Operations
 - Firmware deployment to rental fleets
-- SD card extraction for data upload (M5 Camera modules)
-- Quality control (validate UART logging works)
+- Log extraction for data upload (Android phone storage via WiFi)
+- Quality control (validate serial logging works)
 - Bounty verification (test in simulator before physical demo)
 
 ### League Management
@@ -945,21 +993,22 @@ More Competitors → More Physical Matches
 ## Development Roadmap
 
 ### Phase 1: Physical Bot Firmware (Months 1-3)
-- UART protocol specification (16 commands)
-- Arduino motor controller (listens for 0x01-0x0E)
-- M5 Atom init.py (vanilla MicroPython + custom logic, listens for Custom 0x0F)
-- M5 Camera web server (sends Custom 0x0F, logs all traffic)
-- Integration testing on shared UART bus
+- Serial protocol specification (16 commands)
+- ESP32 UART-to-I2C bridge firmware
+- Arduino motor controller (receives commands via I2C)
+- Android phone Termux setup + Flask web server
+- M5 Atom sensor hub (optional, for IMU/mesh)
+- Integration testing on USB-OTG serial + I2C bus
 
 ### Phase 2: Virtual Simulator Core (Months 4-6)
 - Python game server (250ms updates, no physics engine)
 - Cluster detection + position prediction
-- Virtual UART bus (shared message queue)
-- MicroPython API emulator (runs same init.py)
+- Virtual serial bus (USB-OTG + I2C message queue)
+- Python API emulator (runs same code as physical phone)
 - Flask web servers (60 instances, same UI as physical)
 
 ### Phase 3: ML Predictor + Blender Integration (Months 7-9)
-- Extract keyframe sequences from Knowledge Commons UART logs
+- Extract keyframe sequences from Knowledge Commons serial logs
 - Build ML predictor (5 keyframes → next + % match to original data)
 - Blender rendering pipeline + lo-fi cyberpunk aesthetic
 - Validate sim-to-real accuracy
@@ -993,7 +1042,7 @@ More Competitors → More Physical Matches
 
 This architecture creates a **complete ecosystem** where physical and virtual robotics competitions reinforce each other:
 
-1. **Physical matches** generate high-quality real-world data (UART logs)
+1. **Physical matches** generate high-quality real-world data (serial logs)
 2. **ML Predictor** learns from this data (5 keyframes → next + % match)
 3. **Virtual simulator** makes competition globally accessible (autobattler format)
 4. **Sim-to-real validation** proves dataset quality
@@ -1001,13 +1050,15 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 6. **More competitors** generate more data
 7. **Loop repeats**, improving both physical and virtual systems
 
-**Key Simplification:**
-- M5 Camera: Web server + UART logger (dumb terminal)
-- M5 Atom: Vanilla MicroPython + init.py (all logic)
+**Key Architecture:**
+- Android Phone (Termux): Web server + Python logic + logger (central controller)
+- ESP32 Bridge: UART-to-I2C translation (interface layer)
+- M5 Atom: Sensor hub + mesh networking (optional)
 - Arduino: Motor controller (precise timing)
-- **Shared UART bus**: All modules listen, selective ignore based on command type
+- **USB-OTG serial + I2C bus**: Phone controls all modules through ESP32 bridge
+- **Scalability**: Add more ESP32 bridges for additional I/O ports
 
-**Key Innovation:** ML Predictor built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world keyframe sequences extracted from complete UART bus logs. Same inputs always produce same outputs, with full transparency on which training data was used.
+**Key Innovation:** ML Predictor built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world keyframe sequences extracted from complete serial bus logs. Same inputs always produce same outputs, with full transparency on which training data was used.
 
 **Autobattler Format Benefits:**
 - 90-second matches with no operator interference
@@ -1016,3 +1067,11 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 - Scalability for limited compute resources
 
 The **Mac Mini M4** is ideal for the simulator: unified memory handles 60 bots + Blender rendering efficiently, while batch processing allows sequential match rendering without realtime constraints.
+
+**Why Android Phone + ESP32 Bridge:**
+- Used phones (~€50) are more powerful than ESP32-based camera modules
+- Phone runs full Python (not MicroPython), enabling richer logic
+- USB-OTG serial provides reliable high-speed communication
+- ESP32 bridge handles I2C translation + analog/digital I/O
+- Scalable: add more ESP32 bridges for more ports/modules
+- Phone's built-in camera, WiFi, storage replace dedicated camera module functionality
