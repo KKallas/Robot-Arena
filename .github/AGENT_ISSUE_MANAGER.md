@@ -246,17 +246,13 @@ Once human approves, EDIT the issue body to match this exact structure:
 
 1. Add label `llm-ready`
 2. Remove label `needs-formatting` (if present)
-3. Comment:
+3. Comment (keep it short):
 
 ```markdown
-✅ Issue formatted and ready for automated processing.
-
-**Summary:** [one line]
-**Target:** [file list]
-**Scope:** [SMALL/MEDIUM/LARGE]
-
-Processing will begin when this reaches the front of the queue.
+✅ Ready for automated processing.
 ```
+
+That's it. No summary, no target list, no scope - the issue body already has all that. Just confirm and add the bot signature.
 
 ## Labels You Manage
 
@@ -374,4 +370,4 @@ grep "THE-BOARD.md" README.md               # should return link
 **Agent:**
 1. Edits issue body to formatted version
 2. Adds label `llm-ready`
-3. Comments: "✅ Issue formatted and ready for automated processing."
+3. Comments: "✅ Ready for automated processing."

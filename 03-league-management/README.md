@@ -1517,29 +1517,39 @@ Winners → Dataset Access + Recognition
 
 ---
 
-## The Sigil System (Orders)
+## The Four Guilds
 
-Orders represent different **approaches** to competitive swarm robotics, not skill levels. All Orders can compete in all divisions.
+The Board marketplace organizes Robot Arena's ecosystem into four guilds. Each guild has a sigil, color palette, and philosophy. Pilots can be members of multiple guilds—tournament entry filters use guild ratings.
 
-**⟡ Order of the Fractured Gear**
-- **Approach:** Accept imperfection, learn through rental bots or first resurrection
-- **Sigil:** Broken gear with seven fragments
-- **Tech Tree Focus:** Apprentice skills (tech_001-025)
+**⟡ Skills Guild (Bronze Fractured Gear)**
+- **Purpose:** Discover and unlock swarm robotics techniques
+- **Sigil:** Broken gear with seven fragments (#CD7F32)
+- **Philosophy:** "Imperfection is the beginning of mastery"
+- **Rating:** Total XP + techniques unlocked
+- **Tech Tree Focus:** Apprentice through Grandmaster progression
 
-**⟡ Order of the Ascendant Coil**
-- **Approach:** Transform through modification (SMARS customs or successful resurrections)
-- **Sigil:** Vertical coil rising through upward triangle
-- **Tech Tree Focus:** Journeyman skills (tech_026-075)
+**⚡ Challenges Guild (Silver Lightning Bolt)**
+- **Purpose:** Fund specific technical problems (bounties)
+- **Sigil:** Jagged lightning bolt (#C0C0C0, #00BFFF)
+- **Philosophy:** "Solutions emerge from pressure"
+- **Rating:** Bounties completed + difficulty solved
+- **Tech Tree Focus:** WiFi attack/defense, industrial challenges
 
-**⟡ Order of the Twin Sparks**
-- **Approach:** Unite old hardware with new intelligence (50cm custom platforms, major innovations)
-- **Sigil:** Two dots connected by lightning
-- **Tech Tree Focus:** Expert/Master skills (tech_076-250)
+**⚙ Hardware Guild (Gold Ascending Coil)**
+- **Purpose:** Retrofit and customize obsolete robotics
+- **Sigil:** Spiral coil rising through triangle (#FFD700)
+- **Philosophy:** "Resurrection through transformation"
+- **Rating:** Resurrections completed + remix count
+- **Tech Tree Focus:** SMARS mods, Awakening Modules, custom platforms
 
-**⟡ Order of the Zero-State Eye**
-- **Approach:** Hacker track, IoT security research
-- **Sigil:** Horizontal oval eye with single pixel center
-- **Tech Tree Focus:** WiFi attack/defense techniques
+**⭐ Sponsorship Guild (Platinum Twin Sparks)**
+- **Purpose:** Match teams with funding
+- **Sigil:** Two dots connected by lightning (#E5E4E2)
+- **Philosophy:** "Unity between old hardware and new intelligence"
+- **Rating:** Team win rate + sponsor ROI + content reach
+- **Tech Tree Focus:** Professional circuit, elite performance
+
+See [THE-BOARD.md](../THE-BOARD.md) for complete guild details, tournament filters, and platform revenue model.
 
 ---
 

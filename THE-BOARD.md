@@ -706,33 +706,6 @@ Sort by:
 
 ---
 
-## Migration from Old System
-
-**Current docs → New unified model:**
-
-| Old Document | New Guild | Changes |
-|--------------|-----------|---------|
-| BOUNTY-BOARD.md | ⟡ Skills Guild | Rename "bounties" to "techniques", keep XP system intact |
-| SPONSOR-BOARD.md | ⭐ Sponsorship Guild | Keep structure, add guild ratings for tournament filtering |
-| Knowledge Commons bounties | ⚡ Challenges Guild | Move to unified board, standardize commission (10%) |
-| Resurrection Archive | ⚙ Hardware Guild | New guild, formalize remix royalties |
-| Orders system | Guild memberships | Each Order maps to primary guild |
-
-**Orders → Guilds mapping:**
-
-- **Order of the Fractured Gear** → ⟡ Skills Guild (entry path: rental bots)
-- **Order of the Ascendant Coil** → ⚙ Hardware Guild (entry path: resurrections)
-- **Order of the Twin Sparks** → ⭐ Sponsorship Guild (entry path: elite performance)
-- **Order of the Zero-State Eye** → ⚡ Challenges Guild (entry path: hacker bounties)
-
-**Benefits of migration:**
-- Single interface (one board, four tabs)
-- Unified rating system (tournament filters make sense)
-- Clear guild identity (sigils, colors, philosophies)
-- Simpler onboarding (understand one Kickstarter model, not four separate systems)
-
----
-
 For technical architecture, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 For timeline event storage, see [TIMELINE-ARCHITECTURE.md](TIMELINE-ARCHITECTURE.md).

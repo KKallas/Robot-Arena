@@ -342,29 +342,33 @@ Sports league infrastructure and media production engine
 
 ---
 
-## Orders System (Progression Tracks)
+## The Board: Four Guild Markets
 
-**⟡ Order of the Fractured Gear**
-- Entry: Compete with rental bot
-- Philosophy: "Imperfection is the beginning of rebirth"
-- XP: bout +1, win +3, knowledge contribution +2
+**The Board is Robot Arena's unified crowdfunding platform with four specialized markets.** Think Kickstarter meets skill progression: post challenges, sponsor teams, share hardware designs, unlock techniques. Your rating on each guild determines tournament eligibility.
 
-**⟡ Order of the Ascendant Coil**
-- Entry: Modify SMARS bot OR resurrect obsolete hardware
-- Philosophy: "Resurrection through transformation"
-- XP: bout +1, win +3, knowledge contribution +4
+**⟡ Skills Guild (Bronze Fractured Gear)**
+- Discover and unlock swarm robotics techniques
+- Rating: Total XP + techniques unlocked
+- Entry path: Compete with rental bot ("Imperfection is the beginning of mastery")
 
-**⟡ Order of the Twin Sparks**
-- Entry: Win Ascendant competition OR 100+ remixes of your contribution
-- Philosophy: "Unity between old hardware and new intelligence"
-- XP: bout +1, win +5, knowledge contribution +4
+**⚡ Challenges Guild (Silver Lightning Bolt)**
+- Fund specific technical problems (bounties)
+- Rating: Bounties completed + difficulty solved
+- Entry path: Hacker track, solving technical challenges ("Solutions emerge from pressure")
 
-**⟡ Order of the Zero-State Eye**
-- Entry: Stop or take over 10 enemy units in single match (hacker track)
-- Philosophy: "Awareness emerging from nothing"
-- XP: bout +1, win +2, knowledge contribution +10
+**⚙ Hardware Guild (Gold Ascending Coil)**
+- Retrofit and customize obsolete robotics
+- Rating: Resurrections completed + remix count
+- Entry path: Modify SMARS or resurrect obsolete hardware ("Resurrection through transformation")
 
-**All Orders compete together.** No skill-based divisions, just different approaches to the sport.
+**⭐ Sponsorship Guild (Platinum Twin Sparks)**
+- Match teams with funding
+- Rating: Team win rate + sponsor ROI + content reach
+- Entry path: Elite performance or 100+ remixes ("Unity between old hardware and new intelligence")
+
+**All guilds compete together.** Most pilots are members of multiple guilds. Tournament filters use guild ratings (e.g., "Expert tier only" or "€2k+ backing required").
+
+See [THE-BOARD.md](THE-BOARD.md) for complete details.
 
 ---
 
