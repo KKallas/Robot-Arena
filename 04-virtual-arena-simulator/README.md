@@ -1,47 +1,60 @@
 # Virtual Arena Simulator
 
-**Purpose:** Lightweight, open-source simulator that validates dataset quality while looking intentionally lo-fi cyberpunk.
+**Purpose:** Lightweight, open-source simulator that validates dataset quality through offline batch rendering and autobattler match format.
 
 ## What It Is
 
-**Deliberately pixelated aesthetic.** Low-poly bots, CRT scan lines, pixel-perfect collision boxes, retro UI. Technical constraints (4Hz physics, single Mac Mini) become stylistic choices.
+**Autobattler format.** 90-second matches with no operator interference. Pilots prepare their Python packages in advance with LLM assistance, upload them, and the simulation runs autonomously. Strategy generation "on the go" is a future enhancement.
 
-**Think:** Early arcade games + Tron + hacker terminal. Not photorealistic - computational brutalism.
+**Think:** Automated chess match + offline video production. Not realtime—batch processed for scalability.
 
 ## Core Technology Stack
 
 **All open source, runs on single Mac Mini M4:**
 
-- **Godot Engine** (not Unreal) - fully open source, lightweight, Python-like scripting
-- **Python physics engine** - 4Hz updates (250ms intervals), visible grid coordinates
-- **ML collision predictor** - trained on per-drone logs from real matches
+- **Blender** (offline rendering) - open source, scriptable, produces multiple camera angles
+- **Python game server** (no physics engine) - cluster detection, position prediction, collision lookup
+- **Collision LUT** - lookup table trained on similar path collections from real recorded world data
 - **Same MicroPython code** - identical init.py runs in simulator as on ESP32s
 - **CSV timeline format** - writes identical events.csv as physical matches
 
-## The Aesthetic: Cyberpunk Data Visualization
+## The Autobattler Format
 
-**Intentional lo-fi choices that hide resource constraints:**
+**90-second matches with no operator interference during the match:**
 
-**Visual style:**
-- Chunky pixels (8x8 or 16x16 sprite-like bots)
-- Visible collision boxes (neon wireframes)
-- CRT scan lines and screen flicker
-- Monochrome or limited color palette (cyan/magenta/yellow)
-- Grid-based arena floor (visible coordinate system)
-- Retro terminal fonts for all UI text
+**How it works:**
+1. Pilots prepare Python packages with LLM assistance (Claude, ChatGPT)
+2. Packages are uploaded and signed before match start
+3. Match runs autonomously—no manual intervention allowed
+4. Results rendered offline and delivered as video
 
-**Why this works:**
-- Low-poly models = easier to render 60 bots at once
-- Pixelated = masks imperfect physics interpolation
-- Wireframe collision boxes = shows AI decision boundaries
-- Grid coordinates = makes bot positions debuggable
-- Terminal aesthetic = feels like hacker tool, not toy
+**Why autobattler:**
+- Forces pilots to encode complete strategies in advance
+- AI copilot collaboration happens during preparation, not execution
+- Captures strategic planning data, not just reaction data
+- Matches can be queued and batch-processed for scalability
 
-**Reference inspirations:**
-- Uplink (2001) - hacker simulation aesthetic
-- SUPERHOT - minimalist 3D with visible timing
-- Hacknet - terminal interface meets real-time action
-- Early Virtua Fighter - blocky but functional
+**Future enhancement:** Strategy generation "on the go" where bots can request LLM assistance mid-match.
+
+## Game Server Architecture
+
+**Python-based game server (no physics engine):**
+
+**Cluster detection:**
+- Identify bots that are close and need to react to each other
+- Group nearby bots into interaction clusters
+- Only compute detailed interactions within clusters
+
+**Position prediction:**
+- Use current position + motion vectors to predict new positions
+- Simple kinematic projection between decision points
+- 4Hz update rate (250ms intervals)
+
+**Collision Lookup Table (LUT):**
+- Pre-computed from real recorded world data
+- Lookup similar path collections from historical matches
+- Return collision outcomes based on closest match
+- Faster than physics simulation, validated against real data
 
 ## Why It Matters
 
@@ -65,52 +78,62 @@ See [ARCHITECTURE.md](../ARCHITECTURE.md) for complete technical details.
 
 **Design principle:** Everything open source, everything lightweight, everything debuggable.
 
-### `/game-engine/` (Python)
-Physics loop running at 4Hz:
+### `/game-server/` (Python)
+Game loop running at 4Hz:
 - Updates 60 bot positions every 250ms
-- Grid-based collision detection (visible in UI)
-- ML model predicts collision outcomes
+- Cluster-based interaction detection
+- Position prediction using motion vectors
+- Collision LUT lookup for outcome resolution
 - Writes to events.csv (same format as physical matches)
-- Sends positions to Godot via WebSocket
+- Outputs position timeline for Blender rendering
 
 **Why Python:** Readable, debuggable, same language as match analysis tools. Not hidden in compiled binary.
 
-### `/godot-renderer/` (Godot Engine 4.x)
-Open-source game engine rendering:
-- Receives bot positions via WebSocket @ 4Hz
-- Pixel art sprites or low-poly 3D models
-- CRT shader for scan lines and screen flicker
-- Wireframe collision box overlay
-- Grid floor with coordinate labels
-- 2 camera views (top-down + bot POV)
+### `/blender-renderer/` (Blender 4.x)
+Offline batch rendering:
+- Reads position timeline after match completion
+- Renders all camera angles in parallel
+- Low-poly 3D models with cyberpunk aesthetic
+- Multiple camera outputs (top-down + bot POV angles)
+- Exports final video files (MP4/WebM)
 
-**Why Godot:**
-- Fully open source (MIT license)
-- Lightweight (entire engine ~50MB)
-- GDScript similar to Python
-- Built-in shader system for retro effects
+**Why Blender:**
+- Fully open source (GPL license)
+- Python scripting for automation
+- Headless rendering (no GUI needed)
+- Production-quality output
 - Cross-platform (Mac, Linux, Windows)
 - Active community
 
+### Offline/Batch Processing Benefits
+
+**Scalability for limited compute resources:**
+- Matches can be prepared, signed, and queued
+- Non-realtime simulation allows batch processing
+- Multiple matches rendered sequentially on single machine
+- Peak demand smoothed across available compute time
+- No need for low-latency infrastructure
+
 ### `/web-interface/` (Flask + Terminal UI)
-Minimalist match control interface:
+Match preparation and results interface:
 - ASCII art dashboard (looks like tmux/screen)
 - Terminal-style command input
-- Real-time event log (scrolling text)
+- Package upload and signing
+- Match queue management
+- Results video playback
 - Monospace font, limited colors
-- Same 4-panel layout as physical matches
 
 **Aesthetic goal:** Feels like SSH session into match server, not polished web app.
 
-### `/ml-models/` (PyTorch)
-Collision predictor trained on per-drone logs:
-- Input: Pre-collision state (positions, velocities, masses)
-- Output: Post-collision velocities, damage states
-- Model file: ~500KB
-- Inference: <1ms on M4 Neural Engine
-- Training notebook published on GitHub
+### `/collision-lut/` (Python + NumPy)
+Collision lookup table built from real match data:
+- Source: Per-drone logs from physical matches
+- Structure: Indexed by path similarity vectors
+- Lookup: Find closest matching path collection from recorded data
+- Output: Collision outcomes (velocities, damage states)
+- Size: ~50MB compressed database
 
-**Open source:** Anyone can retrain on updated datasets, audit predictions, contribute improvements.
+**Open source:** Anyone can rebuild from datasets, audit lookup logic, contribute improvements.
 
 ### `/assets/`
 All visual assets open source:
@@ -125,26 +148,27 @@ All visual assets open source:
 ## Development Timeline
 
 **Single developer, part-time (choosing lightweight stack accelerates timeline):**
-- Month 1: Python physics engine + grid collision detection
-- Month 2: Godot renderer + pixel art bot sprites + CRT shaders
-- Month 3: WebSocket integration + CSV event logging
-- Month 4: ML collision model training pipeline
-- Month 5: Flask terminal UI + match replay
+- Month 1: Python game server + cluster detection
+- Month 2: Collision LUT builder + position prediction
+- Month 3: Blender rendering pipeline + automation scripts
+- Month 4: Package upload/signing + match queue system
+- Month 5: Flask terminal UI + results delivery
 - Month 6: Polish, testing, documentation
-- **Total: 6 months MVP (vs 8-12 with Unreal)**
+- **Total: 6 months MVP**
 
 **Why faster:**
-- Godot has built-in 2D/3D sprite system (no modeling needed)
-- Pixel art is faster than 3D modeling
-- Open source tools = no licensing/setup friction
-- Terminal UI is simpler than polished web frontend
-- Lo-fi aesthetic forgives imperfections
+- Offline rendering = no realtime synchronization complexity
+- Blender Python scripting = automated pipeline
+- Collision LUT = no physics engine needed
+- Batch processing = simpler infrastructure
+- Autobattler format = no live interaction handling
 
 ## Usage
 
 **For Competitors:**
-- Practice unlimited in simulator (free)
-- Develop strategies, test formations
+- Prepare strategy packages with LLM assistance
+- Upload signed packages for 90-second autobattler matches
+- Review rendered match videos to refine strategies
 - Compete in online qualifiers (€10 entry)
 - Top performers invited to physical events
 
