@@ -188,8 +188,9 @@ def run_claude(prompt: str, repo_dir: str, test_mode: bool = False) -> bool:
 
     try:
         # Use stream-json for real-time streaming output (requires --verbose)
+        # --dangerously-skip-permissions allows commands without interactive approval
         process = subprocess.Popen(
-            ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS, "--output-format", "stream-json", "--verbose"],
+            ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
