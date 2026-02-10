@@ -244,8 +244,9 @@ def process_issue(issue: dict, dry_run: bool = False, test_mode: bool = False) -
 
     try:
         # Use Popen with stream-json for real-time streaming (requires --verbose)
+        # --dangerously-skip-permissions allows gh commands without interactive approval
         process = subprocess.Popen(
-            ["claude", "-p", prompt, "--allowedTools", allowed_tools, "--output-format", "stream-json", "--verbose"],
+            ["claude", "-p", prompt, "--allowedTools", allowed_tools, "--output-format", "stream-json", "--verbose", "--dangerously-skip-permissions"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
