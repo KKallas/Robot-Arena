@@ -35,9 +35,9 @@ Robot Arena is a competitive robotics sport with three main pillars (Knowledge C
 │         │  Physical Firmware  │   │ Virtual Simulator  │       │
 │         │                     │   │                    │       │
 │         │ - Arduino Motor     │   │ - Python Emulator  │       │
-│         │ - M5 Atom Logic     │   │ - Physics Engine   │       │
-│         │ - M5 Camera WebUI   │   │ - ML Collision     │       │
-│         │ - UART Bus Protocol │   │ - Unreal Render    │       │
+│         │ - M5 Atom Logic     │   │ - Game Server      │       │
+│         │ - M5 Camera WebUI   │   │ - Collision LUT    │       │
+│         │ - UART Bus Protocol │   │ - Blender Render   │       │
 │         └─────────────────────┘   └────────────────────┘       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -462,7 +462,13 @@ Served by M5 Camera module, accessible at `http://192.168.4.1` (WiFi AP).
 
 ### Architecture Overview
 
-The simulator **mirrors the physical bot architecture exactly** including the shared UART bus behavior. Same code runs in both environments. Key innovation: **ML-based collision prediction** trained on real match data.
+The simulator uses an **autobattler format** with offline Blender rendering in a **lo-fi cyberpunk aesthetic**. Same MicroPython code runs in both environments. Key innovation: **ML Predictor** that takes last 5 keyframes and predicts next keyframe with % match to original training data. Lo-fi aesthetic (low-poly, CRT scan lines, visible grid) accelerates development with limited resources.
+
+**Autobattler Format:**
+- 90-second matches with no operator interference during match
+- Pilots prepare Python packages with LLM assistance
+- Packages are signed and queued for batch processing
+- Strategy generation "on the go" is a future enhancement
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -475,44 +481,47 @@ The simulator **mirrors the physical bot architecture exactly** including the sh
 │  │  Each bot emulates:                                       │  │
 │  │  - M5 Camera (Flask web server, same 3-tab UI)           │  │
 │  │  - M5 Atom (vanilla MicroPython + init.py, same code)    │  │
-│  │  - Arduino (motor commands → physics engine)             │  │
+│  │  - Arduino (motor commands → game server)                │  │
 │  │  - Shared UART bus (virtual message queue)               │  │
 │  │  - Sensors (simulated with realistic noise)              │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │         Physics Engine (Python)                           │  │
+│  │         Game Server (Python - No Physics Engine)          │  │
 │  │                                                           │  │
 │  │  - Updates 60 bot positions @ 250ms (4Hz)                │  │
-│  │  - Tracks: position, velocity, rotation, acceleration    │  │
-│  │  - Collision detection (proximity-based)                 │  │
+│  │  - Cluster detection: identify bots needing interaction  │  │
+│  │  - ML prediction: last 5 keyframes → next + % match      │  │
 │  │  - Arena boundaries, goal circles, obstacles             │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │      ML Collision Predictor (PyTorch)                     │  │
+│  │      ML Predictor (5 Keyframes → Next + % Match)          │  │
 │  │                                                           │  │
-│  │  Trained on real match data from Knowledge Commons:      │  │
-│  │  - Input: pre-collision state (pos, vel, mass, angle)    │  │
-│  │  - Output: post-collision state (velocities, damage)     │  │
+│  │  Built from real match data in Knowledge Commons:        │  │
+│  │  - Input: last 5 keyframes (positions, velocities)       │  │
+│  │  - Output: next keyframe + % match to original data      │  │
+│  │  - Reports which training tracks were used               │  │
 │  │  - Accuracy: 87% position, 92% damage (validated)        │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │    Unreal Engine 5 (Rendering)                           │  │
+│  │    Blender (Offline Rendering - Lo-Fi Aesthetic)          │  │
 │  │                                                           │  │
-│  │  - Receives positions via WebSocket @ 250ms              │  │
-│  │  - Interpolates movement for 60fps rendering             │  │
-│  │  - Generates 61 camera feeds (60 POV + 1 overhead)       │  │
-│  │  - Outputs H.264 streams (RTSP or WebRTC)                │  │
+│  │  - Reads position timeline after match completion        │  │
+│  │  - Renders all camera angles in parallel                 │  │
+│  │  - Lo-fi cyberpunk: low-poly, CRT lines, visible grids   │  │
+│  │  - Generates 61 camera outputs (60 POV + 1 overhead)     │  │
+│  │  - Exports final video files (MP4/WebM)                  │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  Competitors connect via:                                        │
-│  - VPN (remote access to bot web UIs)                           │
-│  - Web interface (same 3-tab UI as physical bots)               │
+│  Offline/Batch Processing Benefits:                              │
+│  - Matches can be prepared, signed, and queued                  │
+│  - Non-realtime simulation for scalability                      │
+│  - Multiple matches rendered sequentially on single machine     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -520,7 +529,7 @@ The simulator **mirrors the physical bot architecture exactly** including the sh
 
 ### Virtual Bot Implementation
 
-**Key Design Principle:** Exact API compatibility with physical bots, including UART bus simulation.
+**Key Design Principle:** Exact API compatibility with physical bots, including UART bus simulation. Autobattler format with offline rendering.
 
 ```python
 # virtual_bot.py
@@ -532,9 +541,9 @@ virtual_uart_bus = queue.Queue()
 class VirtualBot:
     """Emulates M5 Camera + M5 Atom + Arduino stack + shared UART bus"""
 
-    def __init__(self, bot_id, physics_engine, uart_bus):
+    def __init__(self, bot_id, game_server, uart_bus):
         self.id = bot_id
-        self.physics = physics_engine
+        self.game_server = game_server  # Game server (no physics engine)
         self.uart_bus = uart_bus  # Shared message queue
 
         self.position = [0, 0, 0]  # x, y, theta
@@ -585,8 +594,8 @@ class VirtualBot:
         # Send to UART bus (Arduino emulator will see it)
         self.send_to_bus(0x01, duration=duration_ms, speed=speed_percent)
 
-        # Physics engine executes
-        self.physics.apply_force(
+        # Game server handles position prediction
+        self.game_server.predict_position(
             bot_id=self.id,
             direction=self.position[2],
             magnitude=speed_percent / 100.0,
@@ -594,12 +603,12 @@ class VirtualBot:
         )
 
     def sensors_imu(self):
-        # Get true values from physics, add realistic noise
-        true_accel = self.physics.get_acceleration(self.id)
+        # Get values from game server, add realistic noise
+        predicted_accel = self.game_server.get_acceleration(self.id)
         noise = np.random.normal(0, 0.01, 3)  # Match MPU6886 specs
         return {
-            'accel': (true_accel + noise).tolist(),
-            'gyro': self.physics.get_angular_velocity(self.id).tolist(),
+            'accel': (predicted_accel + noise).tolist(),
+            'gyro': self.game_server.get_angular_velocity(self.id).tolist(),
             'temp': 25.0 + np.random.normal(0, 0.5)
         }
 
@@ -620,9 +629,8 @@ class VirtualBot:
 
         @app.route('/api/camera')
         def camera_feed():
-            # Generate synthetic POV frame from Unreal
-            frame = self.physics.unreal_bridge.get_pov(self.id)
-            return Response(frame, mimetype='image/jpeg')
+            # POV frames rendered offline by Blender after match
+            return Response(b'', mimetype='image/jpeg')
 
         @app.route('/api/logs')
         def get_logs():
@@ -643,146 +651,193 @@ class VirtualBot:
 
 ---
 
-### ML Collision Predictor
+### ML Predictor (5 Keyframes → Next + % Match)
 
-**The Killer Feature:** Proves value of Knowledge Commons dataset.
+**The Killer Feature:** Proves value of Knowledge Commons dataset. Takes last 5 keyframes, predicts next keyframe, and reports % match to original training data. Fully deterministic—same inputs always produce same outputs.
 
-**Training Pipeline:**
+**ML Predictor Building Pipeline:**
 ```python
-# ml_collision_predictor.py
-import torch
-import torch.nn as nn
+# ml_predictor_builder.py
+import numpy as np
+from sklearn.neighbors import BallTree
 
-class CollisionPredictor(nn.Module):
+class MLPredictor:
     """
-    Predicts post-collision state from pre-collision state.
-    Trained on real Arena match data from Knowledge Commons.
+    Keyframe predictor built from real Arena match data.
+    Input: last 5 keyframes (positions, velocities, rotations)
+    Output: next keyframe + % match to original training data
     """
 
     def __init__(self):
-        super().__init__()
-        # Input: [pos_A(2), vel_A(2), mass_A(1),
-        #         pos_B(2), vel_B(2), mass_B(1),
-        #         collision_angle(1)] = 11 features
-        self.fc1 = nn.Linear(11, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 64)
-        # Output: [vel_A_post(2), vel_B_post(2),
-        #          damage_A(1), damage_B(1)] = 6 values
-        self.fc4 = nn.Linear(64, 6)
+        self.keyframe_sequences = []  # 5-frame input sequences
+        self.next_frames = []         # Corresponding next frames
+        self.source_matches = []      # Which original match each came from
+        self.tree = None              # BallTree for fast lookup
 
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = torch.relu(self.fc3(x))
-        return self.fc4(x)
+    def build_from_matches(self, match_logs_path):
+        """
+        Load from /01-knowledge-commons/ml-datasets/match-replays/
+        Parse UART logs from M5 Camera SD cards
+        """
+        for log_file in glob(f'{match_logs_path}/*.log'):
+            match_id = extract_match_id(log_file)
+            packets = parse_uart_log(log_file)
+            positions = reconstruct_positions(packets)
 
-# Training from Knowledge Commons data
-def load_collision_data():
-    """
-    Load from /01-knowledge-commons/ml-datasets/match-replays/
-    Parse UART logs from M5 Camera SD cards
-    """
-    collisions = []
+            # Extract 5-frame sequences and their next frames
+            for t in range(5, len(positions)):
+                # Last 5 keyframes as input
+                input_sequence = flatten_keyframes(positions[t-5:t])
+                next_frame = positions[t]
 
-    for log_file in glob('/path/to/knowledge-commons/ml-datasets/uart-logs/*.log'):
-        # Parse UART packets
-        packets = parse_uart_log(log_file)
+                self.keyframe_sequences.append(input_sequence)
+                self.next_frames.append(next_frame)
+                self.source_matches.append(match_id)
 
-        # Reconstruct bot positions from STATUS packets
-        positions = reconstruct_positions(packets)
+        # Build BallTree for fast similarity lookup
+        self.tree = BallTree(np.array(self.keyframe_sequences))
 
-        # Detect collisions (sudden velocity changes)
-        for t in range(len(positions) - 1):
-            for i in range(60):
-                for j in range(i+1, 60):
-                    dist = np.linalg.norm(positions[t][i] - positions[t][j])
-                    if dist < 0.1:  # Collision detected
-                        collisions.append({
-                            'pre': extract_pre_state(positions[t], i, j),
-                            'post': extract_post_state(positions[t+1], i, j),
-                            'log_file': log_file,
-                            'timestamp': t
-                        })
+    def predict(self, last_5_keyframes, k=3):
+        """
+        Predict next keyframe from last 5.
+        Returns: (predicted_frame, match_info)
+        match_info contains % similarity and source match IDs
+        """
+        input_vector = flatten_keyframes(last_5_keyframes)
+        distances, indices = self.tree.query([input_vector], k=k)
 
-    return collisions
+        # Calculate similarity percentages
+        max_dist = distances[0].max() + 1e-6
+        similarities = 100 * (1 - distances[0] / max_dist)
 
-# Train model
-model = CollisionPredictor()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-criterion = nn.MSELoss()
+        # Weighted prediction
+        weights = 1.0 / (distances[0] + 1e-6)
+        weights /= weights.sum()
 
-collision_data = load_collision_data()
-# ... training loop ...
+        predicted_frame = np.zeros_like(self.next_frames[0])
+        match_info = []
+        for w, idx, sim in zip(weights, indices[0], similarities):
+            predicted_frame += w * self.next_frames[idx]
+            match_info.append({
+                'source_match': self.source_matches[idx],
+                'similarity_percent': float(sim),
+                'weight': float(w)
+            })
 
-torch.save(model.state_dict(), 'collision_predictor_v1.pth')
+        return predicted_frame, match_info
+
+    def save(self, path):
+        np.savez_compressed(path,
+            keyframe_sequences=self.keyframe_sequences,
+            next_frames=self.next_frames,
+            source_matches=self.source_matches)
+
+# Build predictor from Knowledge Commons data
+predictor = MLPredictor()
+predictor.build_from_matches('/path/to/knowledge-commons/ml-datasets/uart-logs/')
+predictor.save('ml_predictor_v1.npz')
 ```
 
 **Usage in Simulator:**
 ```python
-# When collision detected in physics engine
-if distance(bot_A, bot_B) < 0.1:
-    # Prepare input for ML model
-    input_state = torch.tensor([
-        bot_A.position[0], bot_A.position[1],
-        bot_A.velocity[0], bot_A.velocity[1],
-        bot_A.mass,
-        bot_B.position[0], bot_B.position[1],
-        bot_B.velocity[0], bot_B.velocity[1],
-        bot_B.mass,
-        collision_angle
-    ])
+# Every 250ms game tick
+for bot in bots:
+    # Get last 5 keyframes for this bot
+    last_5 = bot.position_history[-5:]
 
-    # Predict outcome using real match data
-    predicted = collision_model(input_state)
+    # Predict next keyframe with match info
+    next_frame, match_info = ml_predictor.predict(last_5)
 
-    # Apply to virtual bots
-    bot_A.velocity = predicted[0:2].numpy()
-    bot_B.velocity = predicted[2:4].numpy()
-    bot_A.damage += predicted[4].item()
-    bot_B.damage += predicted[5].item()
+    # Apply prediction
+    bot.position = next_frame[:3]
+    bot.velocity = next_frame[3:5]
+    bot.rotation = next_frame[5]
 
-    # Log to virtual UART bus (for consistency)
-    virtual_uart_bus.put({
-        'cmd': 0x0F,
-        'custom_type': 0x06,  # Debug telemetry
-        'data': f'Collision: bot_{bot_A.id} + bot_{bot_B.id}'
+    # Log prediction transparency (for verification)
+    prediction_log.append({
+        'bot_id': bot.id,
+        'timestamp': current_time,
+        'predicted_position': bot.position.tolist(),
+        'source_matches': match_info  # Which training data was used
     })
+
+# Example match_info output:
+# [
+#   {'source_match': 'match-2025-12-15-042', 'similarity_percent': 87.3, 'weight': 0.52},
+#   {'source_match': 'match-2025-11-22-018', 'similarity_percent': 71.2, 'weight': 0.31},
+#   {'source_match': 'match-2025-10-08-007', 'similarity_percent': 58.9, 'weight': 0.17}
+# ]
 ```
+
+### Battle Reproducibility
+
+**Each battle is a complete, verifiable repository:**
+
+```
+battle-2026-01-07-001/
+├── inputs/
+│   ├── team_red_package.py      # Signed strategy package
+│   ├── team_blue_package.py     # Signed strategy package
+│   └── match_config.json        # Arena setup, bot assignments
+├── ml-predictor/
+│   └── predictor_v1.npz         # Exact ML model version used
+├── outputs/
+│   ├── events.csv               # Complete event timeline
+│   ├── keyframes.json           # All position data
+│   └── prediction_log.json      # Which training data was matched
+├── verification/
+│   └── checksums.sha256         # Verify all outputs match
+└── README.md                    # How to reproduce this battle
+```
+
+**Deterministic execution:** Same inputs + same ML predictor = same outputs every time. The only difference between predictions is which input matches are used for prediction. Anyone can clone the repo and verify.
 
 ---
 
-### Unreal Engine Integration
+### Blender Offline Rendering
 
-**Position Stream Protocol (WebSocket):**
+**Position Timeline Format (JSON):**
 ```json
-// Sent every 250ms to Unreal Engine
+// Complete match timeline written after simulation
 {
-  "timestamp": 1704657600000,
-  "bots": [
+  "match_id": "2026-01-07-001",
+  "duration_seconds": 90,
+  "frames": [
     {
-      "id": 1,
-      "position": {"x": 1.23, "y": 0.87, "z": 0.0},
-      "rotation": {"pitch": 0, "yaw": 45, "roll": 0},
-      "velocity": {"x": 0.5, "y": 0.3}
-    },
-    // ... 59 more bots
-  ],
-  "arena_state": {
-    "time_remaining": 67.5,
-    "red_score": 12,
-    "blue_score": 15
-  }
+      "timestamp": 0,
+      "bots": [
+        {
+          "id": 1,
+          "position": {"x": 1.23, "y": 0.87, "z": 0.0},
+          "rotation": {"pitch": 0, "yaw": 45, "roll": 0},
+          "velocity": {"x": 0.5, "y": 0.3}
+        }
+        // ... 59 more bots
+      ],
+      "arena_state": {
+        "time_remaining": 90.0,
+        "red_score": 0,
+        "blue_score": 0
+      }
+    }
+    // ... frames every 250ms for 90 seconds
+  ]
 }
 ```
 
-**Unreal receives this @ 4Hz, interpolates to 60fps for smooth rendering.**
+**Blender reads complete timeline after match, renders offline.**
 
 **Camera Outputs:**
 - 60 POV cameras (one per bot, 640x480 @ 30fps, matches physical OV2640)
 - 1 overhead camera (top-down arena view, 1920x1080 @ 60fps)
-- H.264 encoding via FFmpeg
-- Streamed via RTSP or WebRTC
+- H.264/H.265 encoding via Blender's built-in encoder
+- Exported as MP4/WebM video files
+
+**Offline/Batch Processing Benefits:**
+- Matches can be prepared, signed, and queued for non-realtime simulation
+- Scalability for limited compute resources
+- Multiple matches rendered sequentially on single machine
+- No need for low-latency streaming infrastructure
 
 ---
 
@@ -846,22 +901,21 @@ More Competitors → More Physical Matches
 **Hardware Requirements:**
 - Mac Mini M4 (base model sufficient)
 - 32GB unified memory recommended
-- 1TB SSD (for Unreal assets + match replays)
+- 1TB SSD (for Blender assets + match replays)
 - 10Gbe networking (optional, for multi-Mac scaling)
 
 **Software Requirements:**
-- Python 3.11+ (physics engine, bot emulator)
-- PyTorch 2.0+ (ML collision model)
-- Unreal Engine 5.3+ (rendering)
+- Python 3.11+ (game server, bot emulator)
+- NumPy + scikit-learn (ML predictor)
+- Blender 4.x (offline rendering)
 - Flask (bot web servers, 60 instances)
-- FFmpeg (H.264 encoding)
 - Redis (virtual UART bus message queue)
 
 **Performance Targets:**
-- 60 virtual bots @ 250ms physics updates ✅
-- Unreal rendering @ 60fps ✅
-- 61 H.264 streams (60 POV + 1 overhead) ⚠️ (may need GPU offload)
-- <500ms end-to-end latency (competitor action → video feedback) ✅
+- 60 virtual bots @ 250ms game server updates ✅
+- Blender offline rendering (batch processed) ✅
+- 61 video outputs (60 POV + 1 overhead) ✅
+- Batch processing: multiple matches queued and rendered sequentially ✅
 
 ---
 
@@ -898,20 +952,21 @@ More Competitors → More Physical Matches
 - Integration testing on shared UART bus
 
 ### Phase 2: Virtual Simulator Core (Months 4-6)
-- Python physics engine (250ms updates)
+- Python game server (250ms updates, no physics engine)
+- Cluster detection + position prediction
 - Virtual UART bus (shared message queue)
 - MicroPython API emulator (runs same init.py)
 - Flask web servers (60 instances, same UI as physical)
-- Basic Unreal scene
 
-### Phase 3: ML Integration (Months 7-9)
-- Extract collision data from Knowledge Commons UART logs
-- Train collision predictor model
-- Integrate into simulator
+### Phase 3: ML Predictor + Blender Integration (Months 7-9)
+- Extract keyframe sequences from Knowledge Commons UART logs
+- Build ML predictor (5 keyframes → next + % match to original data)
+- Blender rendering pipeline + lo-fi cyberpunk aesthetic
 - Validate sim-to-real accuracy
 
 ### Phase 4: Production Ready (Months 10-12)
-- H.264 streaming infrastructure
+- Autobattler format: package upload, signing, queue system
+- Batch processing infrastructure
 - Tournament management system
 - Full documentation
 - Deploy to Mac Mini M4
@@ -939,8 +994,8 @@ More Competitors → More Physical Matches
 This architecture creates a **complete ecosystem** where physical and virtual robotics competitions reinforce each other:
 
 1. **Physical matches** generate high-quality real-world data (UART logs)
-2. **ML models** learn physics from this data (collision prediction)
-3. **Virtual simulator** makes competition globally accessible
+2. **ML Predictor** learns from this data (5 keyframes → next + % match)
+3. **Virtual simulator** makes competition globally accessible (autobattler format)
 4. **Sim-to-real validation** proves dataset quality
 5. **More licensees** fund larger prize pools
 6. **More competitors** generate more data
@@ -952,6 +1007,12 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 - Arduino: Motor controller (precise timing)
 - **Shared UART bus**: All modules listen, selective ignore based on command type
 
-**Key Innovation:** ML-based collision prediction trained on real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world collisions extracted from complete UART bus logs.
+**Key Innovation:** ML Predictor built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world keyframe sequences extracted from complete UART bus logs. Same inputs always produce same outputs, with full transparency on which training data was used.
 
-The **Mac Mini M4** is ideal for the simulator: unified memory handles 60 bots + Unreal + ML inference efficiently, while Metal acceleration speeds up both physics and rendering.
+**Autobattler Format Benefits:**
+- 90-second matches with no operator interference
+- Pilots prepare Python packages with LLM assistance
+- Matches can be prepared, signed, and queued for batch processing
+- Scalability for limited compute resources
+
+The **Mac Mini M4** is ideal for the simulator: unified memory handles 60 bots + Blender rendering efficiently, while batch processing allows sequential match rendering without realtime constraints.
