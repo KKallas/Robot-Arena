@@ -3,16 +3,16 @@ Business infrastructure for engineers
 
 ## What Is Robot Arena?
 
-**Robot Arena is a competitive robotics sport where pilots command 30-bot swarms in 90-second matches.**
+**Robot Arena is an autobattler sport where pilots upload swarm scripts, then watch 30 bots fight autonomously for 90 seconds.**
 
-Think chess + esports + industrial automation. Two teams face off: each has a Pilot (controlling their swarm via AI-assisted coding) and a Hacker (disrupting the opponent's WiFi). The team with more bots in goal circles when time expires wins.
+Think auto chess meets robotics. Two teams face off: each has a Pilot (who prepared swarm behavior scripts) and a Hacker (who prepared WiFi disruption scripts). Once the match starts, nobody touches anything—the bots execute their uploaded code autonomously. The team with more bots in goal circles when time expires wins.
 
-**Why 90 seconds?** Forces pilots to use AI copilots (Claude, ChatGPT) to manage 30 bots. Manual control is impossible. The sport captures human-AI collaboration under extreme time pressure—data that doesn't exist anywhere else.
+**The autobattler format:** No real-time control. Pilots use AI copilots (Claude, ChatGPT) to write and test scripts *before* the match. During the 90-second match, they can only watch. This captures the full AI-assisted development process—the prompts, iterations, debugging—not just the final result.
 
 **The actual product:** Match data. Every 90-second match generates:
-- Complete timeline of pilot-AI conversation (commands, responses, latency)
-- All bot positions and movements (10Hz sampling)
-- WiFi attack patterns (hackers disrupting communications)
+- Complete development timeline (pilot-AI conversation during script preparation)
+- All bot positions and movements (4Hz sampling from simulator, 10Hz from physical)
+- WiFi attack patterns (pre-programmed hacker disruptions)
 - Match outcome tied to strategies used
 
 This data trains the next generation of AI systems for physical-world automation.
@@ -21,13 +21,25 @@ This data trains the next generation of AI systems for physical-world automation
 
 ## How It Works: The Sport
 
-### The Match (90 Seconds)
+### The Match Format (Autobattler)
+
+**Preparation phase (unlimited time before match):**
+- Pilots use AI copilots to write swarm behavior scripts
+- Test in simulator (identical physics to physical arena)
+- Iterate, debug, optimize
+- Upload final scripts to bots
+
+**Execution phase (90 seconds, no intervention):**
+- Timer starts, bots execute uploaded scripts autonomously
+- No pilot input allowed during match
+- Hackers' pre-programmed WiFi attacks trigger automatically
+- Everyone watches the outcome
 
 **Arena:** 3m × 3m floor with goal circles at each end
 
 **Teams:** Team Red vs Team Blue
-- 1 Pilot per team (commands 30-bot swarm)
-- 1 Hacker per team (attacks opponent's WiFi)
+- 1 Pilot per team (prepared 30-bot swarm scripts)
+- 1 Hacker per team (prepared WiFi disruption scripts)
 - 60 total bots on field
 
 **Victory condition:** Most bots in opponent's goal circle when timer hits zero
@@ -37,18 +49,21 @@ This data trains the next generation of AI systems for physical-world automation
 - WiFi-only communication (no mesh, no LoRa)
 - Pilots modify firmware, hardware, sensors within spec limits
 
-### Why This Format Is Unique
+### Why Autobattler Format
 
-**Impossible to control manually:** 30 bots in 90 seconds = ~3 seconds per bot. Pilots MUST use AI copilots to generate swarm commands, upload scripts, coordinate formations.
+**Captures the full development process:** Real-time control only shows the final commands. Autobattler captures the entire AI-assisted scripting process—every prompt, every iteration, every debugging session.
 
-**Real physical consequences:** If AI response is slow or wrong, bots crash into each other. If WiFi defense fails, hacker takes over your swarm. Pressure is real.
+**Deterministic replays:** Same scripts + same initial conditions = same outcome. Anyone can verify results by re-running in simulator.
 
-**Captures human-AI trust patterns:**
-- When does pilot wait for AI vs override manually?
+**Real physical consequences:** If the script has bugs, bots crash into each other. If WiFi defense scripts are weak, hacker takes over your swarm. The preparation matters.
+
+**Captures human-AI collaboration patterns:**
 - What prompts generate reliable swarm code?
-- How do pilots recover when AI fails?
+- How do pilots iterate with AI feedback?
+- When do they trust AI suggestions vs override?
+- How do they debug unexpected behavior?
 
-**This behavioral data under time pressure is worth €50k-500k/year to companies building AI copilots.**
+**This development process data is worth €50k-500k/year to companies building AI coding assistants.**
 
 ---
 
@@ -74,13 +89,24 @@ This data trains the next generation of AI systems for physical-world automation
 
 **What gets captured (Timeline Event Storage):**
 
-Single CSV file per match with millisecond timestamps:
+**Preparation phase log** (before match):
+```
+timestamp,event_type,executed_by,data
+0,session_start,system,pilot=red_pilot
+1234,pilot_prompt,user,write a script that makes bots surround the goal
+2891,ai_response,ai,Here's formation_surround.py...
+5000,pilot_prompt,user,the bots are bunching up, add spacing
+6200,ai_response,ai,Updated with 0.3m minimum distance...
+12000,test_run,simulator,formation_surround.py|result=success
+...
+```
+
+**Match phase log** (during 90-second execution):
 ```
 timestamp,event_type,executed_by,data
 0,match_start,system,red_vs_blue
-1234,pilot_input,user,surround the goal
-2891,ai_response,ai,Uploading formation_surround.py to bots 1-30
-2891,bot_position,bot_01,x=0.5|y=1.2|vx=0.0|vy=0.0
+100,bot_position,bot_01,x=0.5|y=1.2|vx=0.1|vy=0.0
+100,script_event,formation_surround.py,target_acquired|goal_circle
 ...
 90000,match_end,system,winner=red|score=18-12
 ```

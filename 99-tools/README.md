@@ -78,10 +78,12 @@ python3 99-tools/fix_prs.py --pr 123
 ```
 
 **What it does:**
-1. Finds open PRs with review comments
+1. Finds open PRs with review comments (both inline and general)
 2. Clones repo and checks out PR branch
-3. Sends review comments to Claude with fix instructions
-4. Claude makes the requested changes
+3. **Phase 1 - Analysis:** Claude analyzes if feedback is actionable
+   - If unclear: Posts clarification questions, removes `llm-ready` label (signals human attention needed)
+   - If clear: Proceeds to Phase 2
+4. **Phase 2 - Fix:** Claude makes the requested changes
 5. Commits, pushes to PR branch
 6. Replies to each comment: "Addressed in latest commit."
 
