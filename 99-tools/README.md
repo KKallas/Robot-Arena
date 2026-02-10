@@ -62,6 +62,29 @@ python3 99-tools/solve_issues.py --issue 123
 6. Commits, pushes, creates PR
 7. Comments on issue with PR link
 
+### fix_prs.py
+
+Fixes PRs based on review comments.
+
+```bash
+# Preview PRs with review comments
+python3 99-tools/fix_prs.py --dry-run
+
+# Test on specific PR (Claude runs, no push)
+python3 99-tools/fix_prs.py --test --pr 123
+
+# Live mode - fixes and pushes
+python3 99-tools/fix_prs.py --pr 123
+```
+
+**What it does:**
+1. Finds open PRs with review comments
+2. Clones repo and checks out PR branch
+3. Sends review comments to Claude with fix instructions
+4. Claude makes the requested changes
+5. Commits, pushes to PR branch
+6. Replies to each comment: "Addressed in latest commit."
+
 ### contribute.sh (Wrapper)
 
 Simple bash wrapper for the Python tools.
@@ -73,6 +96,7 @@ Simple bash wrapper for the Python tools.
 # Direct mode selection
 ./contribute.sh solve --dry-run
 ./contribute.sh moderate --test --issue 123
+./contribute.sh fix --pr 123
 ```
 
 ## Three Testing Modes
@@ -137,7 +161,8 @@ This ensures transparency about what's human-written vs AI-generated.
 99-tools/
 ├── README.md           # This file
 ├── moderate_issues.py  # Issue formatting tool
-└── solve_issues.py     # Issue solving tool
+├── solve_issues.py     # Issue solving tool
+└── fix_prs.py          # PR review fixer tool
 
 contribute.sh           # Wrapper script (root directory)
 .github/

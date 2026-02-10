@@ -48,6 +48,7 @@ show_help() {
     echo "Modes:"
     echo "  solve      Find llm-ready issues, solve them, create PRs"
     echo "  moderate   Format messy issues for automation"
+    echo "  fix        Fix PRs based on review comments"
     echo "  (none)     Interactive mode selector"
     echo ""
     echo "Options:"
@@ -55,6 +56,7 @@ show_help() {
     echo "  --dry-run  Show what would be done (no Claude, no GitHub)"
     echo "  --test     Run Claude but don't post to GitHub (safe testing)"
     echo "  --issue N  Process specific issue number"
+    echo "  --pr N     Process specific PR number (fix mode)"
     echo "  --help     Show this help"
     echo ""
     echo "Examples:"
@@ -64,6 +66,8 @@ show_help() {
     echo "  ./contribute.sh moderate --dry-run    # Preview issues to moderate"
     echo "  ./contribute.sh moderate --test       # Test moderation without posting"
     echo "  ./contribute.sh solve --issue 123     # Solve specific issue"
+    echo "  ./contribute.sh fix                   # Fix PRs with review comments"
+    echo "  ./contribute.sh fix --pr 123          # Fix specific PR"
     echo ""
     echo "Environment Variables:"
     echo "  ROBOT_ARENA_REPO   Override repo (default: KKallas/Robot-Arena)"
@@ -78,8 +82,9 @@ select_mode() {
     echo ""
     echo -e "  ${GREEN}1) solve${NC}     - Find llm-ready issues and solve them (creates PRs)"
     echo -e "  ${YELLOW}2) moderate${NC}  - Format messy issues for automation (asks questions)"
+    echo -e "  ${CYAN}3) fix${NC}       - Fix PRs based on review comments"
     echo ""
-    read -p "Enter choice [1/2]: " choice
+    read -p "Enter choice [1/2/3]: " choice
 
     case $choice in
         1|solve)
@@ -87,6 +92,9 @@ select_mode() {
             ;;
         2|moderate)
             MODE="moderate"
+            ;;
+        3|fix)
+            MODE="fix"
             ;;
         *)
             echo -e "${RED}Invalid choice${NC}"
@@ -107,6 +115,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         moderate)
             MODE="moderate"
+            shift
+            ;;
+        fix)
+            MODE="fix"
             shift
             ;;
         --help|-h)
@@ -143,5 +155,8 @@ case $MODE in
         ;;
     moderate)
         python3 "$SCRIPT_DIR/99-tools/moderate_issues.py" $EXTRA_ARGS
+        ;;
+    fix)
+        python3 "$SCRIPT_DIR/99-tools/fix_prs.py" $EXTRA_ARGS
         ;;
 esac
