@@ -462,7 +462,7 @@ Served by M5 Camera module, accessible at `http://192.168.4.1` (WiFi AP).
 
 ### Architecture Overview
 
-The simulator uses an **autobattler format** with offline Blender rendering. Same MicroPython code runs in both environments. Key innovation: **Collision Lookup Table (LUT)** built from real match data, plus **cluster-based position prediction**.
+The simulator uses an **autobattler format** with offline Blender rendering in a **lo-fi cyberpunk aesthetic**. Same MicroPython code runs in both environments. Key innovation: **ML Predictor** that takes last 5 keyframes and predicts next keyframe with % match to original training data. Lo-fi aesthetic (low-poly, CRT scan lines, visible grid) accelerates development with limited resources.
 
 **Autobattler Format:**
 - 90-second matches with no operator interference during match
@@ -492,26 +492,28 @@ The simulator uses an **autobattler format** with offline Blender rendering. Sam
 │  │                                                           │  │
 │  │  - Updates 60 bot positions @ 250ms (4Hz)                │  │
 │  │  - Cluster detection: identify bots needing interaction  │  │
-│  │  - Position prediction: current pos + motion vectors     │  │
+│  │  - ML prediction: last 5 keyframes → next + % match      │  │
 │  │  - Arena boundaries, goal circles, obstacles             │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │      Collision LUT (Lookup Table)                         │  │
+│  │      ML Predictor (5 Keyframes → Next + % Match)          │  │
 │  │                                                           │  │
 │  │  Built from real match data in Knowledge Commons:        │  │
-│  │  - Lookup similar path collections from recorded data    │  │
-│  │  - Return collision outcomes based on closest match      │  │
+│  │  - Input: last 5 keyframes (positions, velocities)       │  │
+│  │  - Output: next keyframe + % match to original data      │  │
+│  │  - Reports which training tracks were used               │  │
 │  │  - Accuracy: 87% position, 92% damage (validated)        │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
 │                           ▼                                     │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │    Blender (Offline Rendering)                            │  │
+│  │    Blender (Offline Rendering - Lo-Fi Aesthetic)          │  │
 │  │                                                           │  │
 │  │  - Reads position timeline after match completion        │  │
 │  │  - Renders all camera angles in parallel                 │  │
+│  │  - Lo-fi cyberpunk: low-poly, CRT lines, visible grids   │  │
 │  │  - Generates 61 camera outputs (60 POV + 1 overhead)     │  │
 │  │  - Exports final video files (MP4/WebM)                  │  │
 │  └──────────────────────────────────────────────────────────┘  │
@@ -649,26 +651,28 @@ class VirtualBot:
 
 ---
 
-### Collision Lookup Table (LUT)
+### ML Predictor (5 Keyframes → Next + % Match)
 
-**The Killer Feature:** Proves value of Knowledge Commons dataset by using real recorded collision outcomes.
+**The Killer Feature:** Proves value of Knowledge Commons dataset. Takes last 5 keyframes, predicts next keyframe, and reports % match to original training data. Fully deterministic—same inputs always produce same outputs.
 
-**LUT Building Pipeline:**
+**ML Predictor Building Pipeline:**
 ```python
-# collision_lut_builder.py
+# ml_predictor_builder.py
 import numpy as np
 from sklearn.neighbors import BallTree
 
-class CollisionLUT:
+class MLPredictor:
     """
-    Lookup table for collision outcomes.
-    Built from real Arena match data in Knowledge Commons.
+    Keyframe predictor built from real Arena match data.
+    Input: last 5 keyframes (positions, velocities, rotations)
+    Output: next keyframe + % match to original training data
     """
 
     def __init__(self):
-        self.path_vectors = []  # Path similarity vectors
-        self.outcomes = []      # Corresponding collision outcomes
-        self.tree = None        # BallTree for fast lookup
+        self.keyframe_sequences = []  # 5-frame input sequences
+        self.next_frames = []         # Corresponding next frames
+        self.source_matches = []      # Which original match each came from
+        self.tree = None              # BallTree for fast lookup
 
     def build_from_matches(self, match_logs_path):
         """
@@ -676,79 +680,117 @@ class CollisionLUT:
         Parse UART logs from M5 Camera SD cards
         """
         for log_file in glob(f'{match_logs_path}/*.log'):
-            # Parse UART packets
+            match_id = extract_match_id(log_file)
             packets = parse_uart_log(log_file)
-
-            # Reconstruct bot positions from STATUS packets
             positions = reconstruct_positions(packets)
 
-            # Detect collisions and extract path vectors
-            for t in range(len(positions) - 1):
-                for i in range(60):
-                    for j in range(i+1, 60):
-                        dist = np.linalg.norm(positions[t][i] - positions[t][j])
-                        if dist < 0.1:  # Collision detected
-                            # Extract path collection (positions leading to collision)
-                            path_vector = extract_path_vector(positions, t, i, j)
-                            outcome = extract_outcome(positions[t+1], i, j)
+            # Extract 5-frame sequences and their next frames
+            for t in range(5, len(positions)):
+                # Last 5 keyframes as input
+                input_sequence = flatten_keyframes(positions[t-5:t])
+                next_frame = positions[t]
 
-                            self.path_vectors.append(path_vector)
-                            self.outcomes.append(outcome)
+                self.keyframe_sequences.append(input_sequence)
+                self.next_frames.append(next_frame)
+                self.source_matches.append(match_id)
 
         # Build BallTree for fast similarity lookup
-        self.tree = BallTree(np.array(self.path_vectors))
+        self.tree = BallTree(np.array(self.keyframe_sequences))
 
-    def lookup(self, current_path_vector, k=3):
-        """Find k most similar path collections, return weighted outcome"""
-        distances, indices = self.tree.query([current_path_vector], k=k)
+    def predict(self, last_5_keyframes, k=3):
+        """
+        Predict next keyframe from last 5.
+        Returns: (predicted_frame, match_info)
+        match_info contains % similarity and source match IDs
+        """
+        input_vector = flatten_keyframes(last_5_keyframes)
+        distances, indices = self.tree.query([input_vector], k=k)
+
+        # Calculate similarity percentages
+        max_dist = distances[0].max() + 1e-6
+        similarities = 100 * (1 - distances[0] / max_dist)
+
+        # Weighted prediction
         weights = 1.0 / (distances[0] + 1e-6)
         weights /= weights.sum()
 
-        # Weighted average of similar collision outcomes
-        outcome = np.zeros_like(self.outcomes[0])
-        for w, idx in zip(weights, indices[0]):
-            outcome += w * self.outcomes[idx]
-        return outcome
+        predicted_frame = np.zeros_like(self.next_frames[0])
+        match_info = []
+        for w, idx, sim in zip(weights, indices[0], similarities):
+            predicted_frame += w * self.next_frames[idx]
+            match_info.append({
+                'source_match': self.source_matches[idx],
+                'similarity_percent': float(sim),
+                'weight': float(w)
+            })
+
+        return predicted_frame, match_info
 
     def save(self, path):
         np.savez_compressed(path,
-            path_vectors=self.path_vectors,
-            outcomes=self.outcomes)
+            keyframe_sequences=self.keyframe_sequences,
+            next_frames=self.next_frames,
+            source_matches=self.source_matches)
 
-# Build LUT from Knowledge Commons data
-lut = CollisionLUT()
-lut.build_from_matches('/path/to/knowledge-commons/ml-datasets/uart-logs/')
-lut.save('collision_lut_v1.npz')
+# Build predictor from Knowledge Commons data
+predictor = MLPredictor()
+predictor.build_from_matches('/path/to/knowledge-commons/ml-datasets/uart-logs/')
+predictor.save('ml_predictor_v1.npz')
 ```
 
 **Usage in Simulator:**
 ```python
-# When collision detected via cluster detection
-if distance(bot_A, bot_B) < 0.1:
-    # Build path vector from recent positions
-    path_vector = build_path_vector(
-        bot_A.position_history[-10:],
-        bot_A.velocity,
-        bot_B.position_history[-10:],
-        bot_B.velocity
-    )
+# Every 250ms game tick
+for bot in bots:
+    # Get last 5 keyframes for this bot
+    last_5 = bot.position_history[-5:]
 
-    # Lookup similar paths from real recorded data
-    outcome = collision_lut.lookup(path_vector)
+    # Predict next keyframe with match info
+    next_frame, match_info = ml_predictor.predict(last_5)
 
-    # Apply to virtual bots
-    bot_A.velocity = outcome[0:2]
-    bot_B.velocity = outcome[2:4]
-    bot_A.damage += outcome[4]
-    bot_B.damage += outcome[5]
+    # Apply prediction
+    bot.position = next_frame[:3]
+    bot.velocity = next_frame[3:5]
+    bot.rotation = next_frame[5]
 
-    # Log to virtual UART bus (for consistency)
-    virtual_uart_bus.put({
-        'cmd': 0x0F,
-        'custom_type': 0x06,  # Debug telemetry
-        'data': f'Collision: bot_{bot_A.id} + bot_{bot_B.id}'
+    # Log prediction transparency (for verification)
+    prediction_log.append({
+        'bot_id': bot.id,
+        'timestamp': current_time,
+        'predicted_position': bot.position.tolist(),
+        'source_matches': match_info  # Which training data was used
     })
+
+# Example match_info output:
+# [
+#   {'source_match': 'match-2025-12-15-042', 'similarity_percent': 87.3, 'weight': 0.52},
+#   {'source_match': 'match-2025-11-22-018', 'similarity_percent': 71.2, 'weight': 0.31},
+#   {'source_match': 'match-2025-10-08-007', 'similarity_percent': 58.9, 'weight': 0.17}
+# ]
 ```
+
+### Battle Reproducibility
+
+**Each battle is a complete, verifiable repository:**
+
+```
+battle-2026-01-07-001/
+├── inputs/
+│   ├── team_red_package.py      # Signed strategy package
+│   ├── team_blue_package.py     # Signed strategy package
+│   └── match_config.json        # Arena setup, bot assignments
+├── ml-predictor/
+│   └── predictor_v1.npz         # Exact ML model version used
+├── outputs/
+│   ├── events.csv               # Complete event timeline
+│   ├── keyframes.json           # All position data
+│   └── prediction_log.json      # Which training data was matched
+├── verification/
+│   └── checksums.sha256         # Verify all outputs match
+└── README.md                    # How to reproduce this battle
+```
+
+**Deterministic execution:** Same inputs + same ML predictor = same outputs every time. The only difference between predictions is which input matches are used for prediction. Anyone can clone the repo and verify.
 
 ---
 
@@ -864,7 +906,7 @@ More Competitors → More Physical Matches
 
 **Software Requirements:**
 - Python 3.11+ (game server, bot emulator)
-- NumPy + scikit-learn (collision LUT)
+- NumPy + scikit-learn (ML predictor)
 - Blender 4.x (offline rendering)
 - Flask (bot web servers, 60 instances)
 - Redis (virtual UART bus message queue)
@@ -916,10 +958,10 @@ More Competitors → More Physical Matches
 - MicroPython API emulator (runs same init.py)
 - Flask web servers (60 instances, same UI as physical)
 
-### Phase 3: Collision LUT + Blender Integration (Months 7-9)
-- Extract collision data from Knowledge Commons UART logs
-- Build collision lookup table from recorded data
-- Blender rendering pipeline + automation scripts
+### Phase 3: ML Predictor + Blender Integration (Months 7-9)
+- Extract keyframe sequences from Knowledge Commons UART logs
+- Build ML predictor (5 keyframes → next + % match to original data)
+- Blender rendering pipeline + lo-fi cyberpunk aesthetic
 - Validate sim-to-real accuracy
 
 ### Phase 4: Production Ready (Months 10-12)
@@ -952,7 +994,7 @@ More Competitors → More Physical Matches
 This architecture creates a **complete ecosystem** where physical and virtual robotics competitions reinforce each other:
 
 1. **Physical matches** generate high-quality real-world data (UART logs)
-2. **Collision LUT** learns outcomes from this data (lookup table)
+2. **ML Predictor** learns from this data (5 keyframes → next + % match)
 3. **Virtual simulator** makes competition globally accessible (autobattler format)
 4. **Sim-to-real validation** proves dataset quality
 5. **More licensees** fund larger prize pools
@@ -965,7 +1007,7 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 - Arduino: Motor controller (precise timing)
 - **Shared UART bus**: All modules listen, selective ignore based on command type
 
-**Key Innovation:** Collision LUT built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world collisions extracted from complete UART bus logs.
+**Key Innovation:** ML Predictor built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world keyframe sequences extracted from complete UART bus logs. Same inputs always produce same outputs, with full transparency on which training data was used.
 
 **Autobattler Format Benefits:**
 - 90-second matches with no operator interference

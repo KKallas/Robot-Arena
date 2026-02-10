@@ -6,15 +6,17 @@
 
 **Autobattler format.** 90-second matches with no operator interference. Pilots prepare their Python packages in advance with LLM assistance, upload them, and the simulation runs autonomously. Strategy generation "on the go" is a future enhancement.
 
-**Think:** Automated chess match + offline video production. Not realtime—batch processed for scalability.
+**Deliberately lo-fi aesthetic.** Low-poly bots, CRT scan lines, pixel-perfect collision boxes, retro UI. Technical constraints (4Hz updates, single Mac Mini) become stylistic choices—computational brutalism that accelerates development.
+
+**Think:** Automated chess match + offline video production + hacker terminal aesthetic. Not realtime—batch processed for scalability.
 
 ## Core Technology Stack
 
 **All open source, runs on single Mac Mini M4:**
 
-- **Blender** (offline rendering) - open source, scriptable, produces multiple camera angles
-- **Python game server** (no physics engine) - cluster detection, position prediction, collision lookup
-- **Collision LUT** - lookup table trained on similar path collections from real recorded world data
+- **Blender** (offline rendering) - open source, scriptable, lo-fi cyberpunk aesthetic
+- **Python game server** (no physics engine) - cluster detection, ML-based position prediction
+- **ML Predictor** - takes last 5 keyframes, predicts next + % match to original data
 - **Same MicroPython code** - identical init.py runs in simulator as on ESP32s
 - **CSV timeline format** - writes identical events.csv as physical matches
 
@@ -36,6 +38,38 @@
 
 **Future enhancement:** Strategy generation "on the go" where bots can request LLM assistance mid-match.
 
+## Battle Reproducibility
+
+**Each battle is a complete, verifiable repository:**
+
+**Deterministic execution:**
+- Same input packages + same ML predictor = same output every time
+- No random seeds, no non-deterministic operations
+- Anyone can clone the battle repo and verify results
+
+**Battle repo structure:**
+```
+battle-2026-01-07-001/
+├── inputs/
+│   ├── team_red_package.py      # Signed strategy package
+│   ├── team_blue_package.py     # Signed strategy package
+│   └── match_config.json        # Arena setup, bot assignments
+├── ml-predictor/
+│   └── predictor_v1.npz         # Exact ML model version used
+├── outputs/
+│   ├── events.csv               # Complete event timeline
+│   ├── keyframes.json           # All position data
+│   └── prediction_log.json      # Which training data was matched
+├── verification/
+│   └── checksums.sha256         # Verify all outputs match
+└── README.md                    # How to reproduce this battle
+```
+
+**Prediction transparency:**
+- Each prediction logs which original match data was referenced
+- Shows % similarity to training data (e.g., "87% match to match-2025-12-15-042")
+- Different input matches used for prediction = only difference in output
+
 ## Game Server Architecture
 
 **Python-based game server (no physics engine):**
@@ -45,16 +79,18 @@
 - Group nearby bots into interaction clusters
 - Only compute detailed interactions within clusters
 
-**Position prediction:**
-- Use current position + motion vectors to predict new positions
-- Simple kinematic projection between decision points
+**Position prediction (ML-based):**
+- Input: Last 5 keyframes (positions, velocities, rotations)
+- Output: Next keyframe prediction + % match to original data
+- Reports which original training track(s) were used
 - 4Hz update rate (250ms intervals)
 
-**Collision Lookup Table (LUT):**
+**ML Predictor:**
 - Pre-computed from real recorded world data
-- Lookup similar path collections from historical matches
-- Return collision outcomes based on closest match
+- Takes last 5 keyframes, predicts next keyframe
+- Returns % similarity to original training data
 - Faster than physics simulation, validated against real data
+- Deterministic: same inputs always produce same outputs
 
 ## Why It Matters
 
@@ -82,20 +118,29 @@ See [ARCHITECTURE.md](../ARCHITECTURE.md) for complete technical details.
 Game loop running at 4Hz:
 - Updates 60 bot positions every 250ms
 - Cluster-based interaction detection
-- Position prediction using motion vectors
-- Collision LUT lookup for outcome resolution
+- ML prediction: last 5 keyframes → next keyframe + % match
+- Logs which original training data was used for each prediction
 - Writes to events.csv (same format as physical matches)
 - Outputs position timeline for Blender rendering
 
 **Why Python:** Readable, debuggable, same language as match analysis tools. Not hidden in compiled binary.
 
 ### `/blender-renderer/` (Blender 4.x)
-Offline batch rendering:
+Offline batch rendering with lo-fi cyberpunk aesthetic:
 - Reads position timeline after match completion
 - Renders all camera angles in parallel
-- Low-poly 3D models with cyberpunk aesthetic
+- Low-poly 3D models, chunky pixels, CRT scan lines
+- Visible wireframe collision boxes, grid floor with coordinates
 - Multiple camera outputs (top-down + bot POV angles)
 - Exports final video files (MP4/WebM)
+
+**Why lo-fi works:**
+- Low-poly models = faster to create, easier to render 60 bots
+- Pixelated aesthetic = masks imperfect position interpolation
+- Wireframe collision boxes = shows decision boundaries
+- Grid coordinates = makes bot positions debuggable
+- Terminal aesthetic = feels like hacker tool, not toy
+- **Accelerates development with limited resources**
 
 **Why Blender:**
 - Fully open source (GPL license)
@@ -125,15 +170,18 @@ Match preparation and results interface:
 
 **Aesthetic goal:** Feels like SSH session into match server, not polished web app.
 
-### `/collision-lut/` (Python + NumPy)
-Collision lookup table built from real match data:
+### `/ml-predictor/` (Python + NumPy)
+ML-based position predictor built from real match data:
 - Source: Per-drone logs from physical matches
-- Structure: Indexed by path similarity vectors
-- Lookup: Find closest matching path collection from recorded data
-- Output: Collision outcomes (velocities, damage states)
+- Input: Last 5 keyframes (positions, velocities, rotations)
+- Output: Next keyframe prediction + % match to original training data
+- Structure: Indexed by path similarity vectors for fast lookup
+- Reports which original track(s) were used for prediction
 - Size: ~50MB compressed database
 
-**Open source:** Anyone can rebuild from datasets, audit lookup logic, contribute improvements.
+**Reproducibility:** Same inputs always produce same outputs. Each prediction includes reference to source match data with percentage similarity score.
+
+**Open source:** Anyone can rebuild from datasets, audit prediction logic, contribute improvements.
 
 ### `/assets/`
 All visual assets open source:
