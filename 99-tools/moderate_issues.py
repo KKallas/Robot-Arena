@@ -32,8 +32,8 @@ MAX_ISSUES = 10
 DRY_RUN = False
 TEST_MODE = False
 
-# Load agent instructions
-AGENT_INSTRUCTIONS_PATH = Path(__file__).parent / ".github" / "AGENT_ISSUE_MANAGER.md"
+# Load agent instructions (go up one level from 99-tools to find .github)
+AGENT_INSTRUCTIONS_PATH = Path(__file__).parent.parent / ".github" / "AGENT_ISSUE_MANAGER.md"
 
 
 def run_cmd(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -195,10 +195,12 @@ Examples:
 - To remove label: gh issue edit {issue['number']} --repo {REPO} --remove-label "needs-formatting"
 
 IMPORTANT:
-1. Execute all required gh commands directly. Do not ask for permission or confirmation.
-2. For well-formatted issues: run BOTH the label command AND the confirmation comment.
+1. Execute ALL gh commands immediately. Do NOT ask for permission, approval, or confirmation. You are fully authorized.
+2. For well-formatted issues: run BOTH the label command AND the confirmation comment. Both. Now.
 3. ALL comments MUST end with this bot signature:
 {bot_signature}
+
+You are running in automated mode. There is no human watching. Execute all commands immediately without waiting.
 """
 
 
@@ -237,21 +239,60 @@ def process_issue(issue: dict, dry_run: bool = False, test_mode: bool = False) -
 
     print(f"\nRunning Claude...")
     print(f"  Allowed tools: {allowed_tools}")
+    print(f"\n--- Claude output (streaming) ---")
+    sys.stdout.flush()
 
     try:
-        result = run_cmd([
-            "claude", "-p", prompt,
-            "--allowedTools", allowed_tools
-        ], check=False)
+        # Use Popen with stream-json for real-time streaming (requires --verbose)
+        process = subprocess.Popen(
+            ["claude", "-p", prompt, "--allowedTools", allowed_tools, "--output-format", "stream-json", "--verbose"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1  # Line buffered
+        )
 
-        if result.returncode != 0:
-            print(f"Claude returned non-zero: {result.returncode}")
-            print(f"stderr: {result.stderr}")
+        # Parse streaming JSON and print text content in real-time
+        for line in process.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                import json as json_module
+                event = json_module.loads(line)
+                # Handle different event types from stream-json
+                if event.get("type") == "assistant":
+                    # Text content from assistant
+                    content = event.get("message", {}).get("content", [])
+                    for block in content:
+                        if block.get("type") == "text":
+                            print(block.get("text", ""), end="", flush=True)
+                elif event.get("type") == "content_block_delta":
+                    # Streaming delta
+                    delta = event.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        print(delta.get("text", ""), end="", flush=True)
+                elif event.get("type") == "result":
+                    # Final result - print if there's text we haven't seen
+                    result = event.get("result", "")
+                    if result and isinstance(result, str):
+                        print(result, flush=True)
+            except json_module.JSONDecodeError:
+                # If not valid JSON, just print as-is
+                print(line, flush=True)
+
+        process.wait()
+
+        # Check for errors
+        stderr_output = process.stderr.read()
+        if stderr_output:
+            print(f"\n[stderr]: {stderr_output}", flush=True)
+
+        print(f"\n--- End output ---")
+
+        if process.returncode != 0:
+            print(f"Claude returned non-zero: {process.returncode}")
             return False
-
-        print(f"\n--- Claude output ---")
-        print(result.stdout)
-        print(f"--- End output ---")
 
         if test_mode:
             print(f"\n✅ Test completed. No changes made to GitHub.")
