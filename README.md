@@ -230,30 +230,39 @@ Tracks decision authority at every moment. Dataset buyers analyze:
 
 **The validation loop:**
 ```
-Physical Matches → Timeline Events → Train Simulator → Sim Matches → Compare to Physical → Publish Accuracy Metrics
+Physical Matches → Timeline Events → Build Collision LUT → Sim Matches → Compare to Physical → Publish Accuracy Metrics
 ```
 
 **What it is (feasible for one person):**
-- Mac Mini M4 running Python game engine (60 bots @ 4Hz physics)
-- **Godot Engine** (not Unreal) - fully open source, lightweight
-- **Cyberpunk lo-fi aesthetic** - pixelated bots, CRT scan lines, wireframe collision boxes
+- Mac Mini M4 running Python game server (60 bots @ 4Hz updates)
+- **Blender** (offline rendering) - fully open source, scriptable
+- **Autobattler format** - 90-second matches, no operator interference
 - Writes identical events.csv format as physical matches
 - Same MicroPython code runs in simulator as on ESP32s
-- ML collision model trained offline on per-drone logs
+- Collision LUT built from real recorded world data
 
-**Why deliberately lo-fi:**
-- Technical constraints (4Hz physics, single Mac Mini) become stylistic choices
-- Pixelated graphics mask imperfect interpolation
-- Visible collision boxes make AI decisions debuggable
-- Terminal-style UI feels like hacker tool, not toy
-- Open source stack (Godot + Python) = anyone can audit or contribute
+**Game server architecture (no physics engine):**
+- **Cluster detection:** identify bots that are close and need to react
+- **Position prediction:** use current position + motion vectors
+- **Collision LUT:** lookup similar path collections from recorded data
+
+**Autobattler format:**
+- 90-second matches with no operator interference during match
+- LLM helps prepare Python package to upload and command drones
+- Packages are signed and queued for batch processing
+- Strategy generation "on the go" is future enhancement
+
+**Why offline/batch processing:**
+- Matches can be prepared, signed, and queued for non-realtime simulation
+- Scalability for limited compute resources
+- Multiple matches rendered sequentially on single machine
+- Open source stack (Blender + Python) = anyone can audit or contribute
 
 **Why it matters:**
 - Online competitions (global participation, no hardware needed)
 - Schools practice in simulator before renting physical fleet
 - Dataset buyers see validation metrics before purchasing
 - If simulator predicts accurately → dataset captures real physics
-- **Faster development** (6 months MVP vs 8-12 with Unreal)
 
 ---
 
