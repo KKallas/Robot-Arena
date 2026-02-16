@@ -1,37 +1,84 @@
 # Physical Bot Firmware
 
-**Purpose:** Software stack for SMARS bots with shared UART bus architecture.
+**Purpose:** Software stack for Robot Arena bots using Phone + ESP32 + Arduino architecture.
 
 ## Hardware Stack
 
 ```
-┌─────────────────────────────────────────┐
-│         Shared UART Bus                  │
-│     (921600 baud, all modules)          │
-│                                         │
-│  ┌─────────┐  ┌─────────┐  ┌────────┐ │
-│  │ M5 Cam  │  │ M5 Atom │  │Arduino │ │
-│  │ ESP32-S3│  │ ESP32   │  │ Nano   │ │
-│  └─────────┘  └─────────┘  └────────┘ │
-│      │             │            │      │
-│  (Web UI)     (Logic)      (Motors)    │
-│  (Logs all)                            │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              Single Bot (1 of 30 per team)                   │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │         Phone (Mounted on Bot - Python App)             ││
+│  │   Bot Brain • POV Camera • WiFi Mesh • BLE to ESP32    ││
+│  └──────────────────────────┬──────────────────────────────┘│
+│                              │ BLE                           │
+│                              ▼                               │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │              ESP32 (BLE Server + Sensors)               ││
+│  └──────────────────────────┬──────────────────────────────┘│
+│                              │ UART                          │
+│                              ▼                               │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │              Arduino Nano (Motor Control)               ││
+│  └─────────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Key Concept:** Single shared UART bus where:
-- Everyone listens to all traffic
-- Modules ignore commands not meant for them
-- M5 Camera logs everything to SD card
-- Arduino processes commands 0x01-0x0E (motor control)
-- M5 Atom processes commands 0x0F (Custom type 0x01 - web UI commands)
+**Key Concept:** Each bot has its own phone mounted on it. One phone per bot, 30 phones per team, 60 phones on the field. The phone runs the behavior script and records POV footage. ESP32 handles BLE communication and sensor aggregation. Arduino Nano handles motor PWM and encoder reading.
+
+## Robot Classes
+
+| Class | Size Limit | Target Use | Budget |
+|-------|-----------|------------|--------|
+| **Starter Class (20cm)** | 20cm diameter, 20cm height | Learning, casual competition | €50-100 |
+| **Maintenance Class (60cm)** | 60cm diameter, 60cm height | Infrastructure work, bounties | €200-400 |
+
+See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for complete specifications.
 
 ## Module Responsibilities
 
-### Arduino Motor Controller (`/arduino-motor-controller/`)
+### Phone (Mounted on Each Bot) (`/phone-app/`)
+**Role:** Bot brain, POV camera, mesh coordination
+
+**One phone per bot. 30 phones per team. 60 phones on the field.**
+
+**Capabilities:**
+- Executes behavior script autonomously during match
+- Records POV camera footage (60 camera angles per match!)
+- Coordinates with teammates via WiFi mesh
+- Sends motor commands to ESP32 via BLE
+- Logs all telemetry for Knowledge Commons
+
+**Communicates via:**
+- BLE to ESP32 on this bot (command/telemetry)
+- WiFi mesh to other bots on team (coordination)
+
+### ESP32 BLE Hub (`/esp32-firmware/`)
+**Role:** BLE server, sensor aggregation, UART bridge to Arduino
+
+**Written in:** Arduino C++ (Arduino IDE)
+
+**Listens for (BLE):**
+- Movement commands from phone
+- Configuration updates
+- Telemetry requests
+
+**Sends (BLE):**
+- Sensor readings (IMU, distance, battery)
+- Motor feedback (encoder counts)
+- Status updates
+
+**UART to Arduino:**
+- Forward movement commands
+- Receive encoder/battery data
+
+### Arduino Nano Motor Controller (`/arduino-motor-controller/`)
 **Role:** Motor PWM control, encoder reading, battery monitoring
 
-**Listens for:**
+**Written in:** Arduino C++ (Arduino IDE)
+
+**Listens for (UART from ESP32):**
 - 0x01 MOVE_FORWARD
 - 0x02 MOVE_BACKWARD
 - 0x03 TURN_LEFT
@@ -40,118 +87,117 @@
 - 0x06 DRIVE_DIFFERENTIAL
 - 0x0A EMERGENCY_STOP
 
-**Ignores:**
-- 0x0F CUSTOM (not for motors)
-
-**Sends:**
+**Sends (UART to ESP32):**
 - 0x08 STATUS (battery voltage, encoder counts) @ 10Hz
 
-### M5 Atom Logic Brain (`/m5atom-micropython/`)
-**Role:** Pure application logic in vanilla MicroPython + custom init.py
+## Communication Protocols
 
-**Listens for:**
-- 0x0F CUSTOM type 0x01 (web UI commands from M5 Camera)
-- 0x08 STATUS (from Arduino, for position estimate)
+### BLE Protocol (Phone ↔ ESP32)
 
-**Ignores:**
-- Motor commands (Arduino handles those)
+**Service UUID:** `0000FFE0-0000-1000-8000-00805F9B34FB`
 
-**Sends:**
-- 0x01-0x06 motor commands (to Arduino)
-- 0x0F CUSTOM type 0x06 (debug telemetry for M5 Camera logging)
+**Characteristics:**
+| UUID | Name | Properties | Description |
+|------|------|------------|-------------|
+| FFE1 | Command | Write | Movement commands from phone |
+| FFE2 | Telemetry | Notify | Sensor data to phone @ 10Hz |
+| FFE3 | Config | Read/Write | Bot configuration |
 
-**No HTTP server** - all networking handled by M5 Camera
-
-### M5 Camera Web Server (`/m5camera-webui/`)
-**Role:** Web UI + passive UART logger
-
-**Listens for:**
-- **All UART traffic** (logs everything to SD card)
-
-**Sends:**
-- 0x0F CUSTOM type 0x01 (web UI commands to M5 Atom)
-
-**HTTP Endpoints:**
-- `GET /` - Serve 3-tab interface
-- `POST /api/trigger` - Forward commands to M5 Atom via UART
-- `GET /api/camera` - Stream POV feed (MJPEG)
-- `GET /api/logs` - Return recent UART log entries
-
-**Automatic Upload:**
-After each event, M5 Camera uploads UART logs to Knowledge Commons via WiFi.
-
-## UART Protocol (`/uart-protocol/`)
-
-**16-Command Specification**
-- See [ARCHITECTURE.md](../ARCHITECTURE.md) for complete protocol details
-- Packet format: STX + Cmd + Length + Payload + CRC8
-- Commands 0x00-0x0E: Standard (motor control, status, etc.)
-- Command 0x0F: Custom (extensible for sensors, web UI, etc.)
-
-**Custom Command Structure:**
+**Command Format (FFE1):**
 ```
-0x0F [type] [length_2B] [data]
+[cmd_type:1][param1:2][param2:2][checksum:1]
 
-Types:
-0x01 - Web UI command (M5 Camera → M5 Atom)
-0x02 - Lidar scan data (future)
-0x03 - Vision detection (future)
-0x06 - Debug telemetry (M5 Atom → M5 Camera for logging)
+Commands:
+0x01 MOVE_FORWARD  [duration_ms:2][speed_pct:2]
+0x02 MOVE_BACKWARD [duration_ms:2][speed_pct:2]
+0x03 TURN_LEFT     [duration_ms:2][speed_pct:2]
+0x04 TURN_RIGHT    [duration_ms:2][speed_pct:2]
+0x05 STOP          [0:2][0:2]
+0x06 DIFFERENTIAL  [left_speed:2][right_speed:2]
+0x0A EMERGENCY     [0:2][0:2]
 ```
+
+**Telemetry Format (FFE2):**
+```
+[battery_mv:2][left_enc:4][right_enc:4][imu_heading:2][distance_cm:2]
+```
+
+### UART Protocol (ESP32 ↔ Arduino)
+
+**Baud Rate:** 115200
+**Packet Format:** STX + Cmd + Length + Payload + CRC8
+
+```
+┌─────┬─────┬────────┬─────────────────┬──────┐
+│ STX │ Cmd │ Length │     Payload     │ CRC8 │
+│ 0x02│ 1B  │   1B   │    0-255 B      │  1B  │
+└─────┴─────┴────────┴─────────────────┴──────┘
+```
+
+**Commands (same as BLE, forwarded by ESP32):**
+- 0x01-0x06: Movement commands
+- 0x08: Status response
+- 0x0A: Emergency stop
 
 ## Software Layers
 
 **Layer 0: Firmware (this directory)**
-- Low-level motor control, sensor reads
-- Built into Arduino/M5 Atom
+- Arduino C++ for ESP32 and Arduino Nano
+- Low-level motor control, sensor reads, BLE/UART handling
+- Compiled and uploaded via Arduino IDE
 
-**Layer 1: Python Automation**
-- User-defined functions in M5 Atom init.py
-- Uploaded via web UI (Tab 2)
+**Layer 1: Phone App (per bot)**
+- Python (Kivy or BeeWare framework)
+- Runs behavior script, POV recording, mesh coordination
+- Each bot has its own phone mounted on it
 
-**Layer 2: JavaScript Orchestration**
-- Multi-bot coordination in browser (Tab 3)
-- Sends HTTP commands to multiple bots
+**Layer 2: Pilot's Script**
+- Python behavior script written by pilot
+- Uploaded to all 30 phones before match
+- No changes allowed during match (autobattler format)
 
 ## Development Workflow
 
-**Arduino:**
+**Arduino Nano:**
 1. Write C++ code in Arduino IDE
 2. Compile and upload to Arduino Nano
-3. Test UART communication with M5 Atom
+3. Test UART communication with ESP32
 
-**M5 Atom:**
-1. Write Python in `init.py`
-2. Upload vanilla MicroPython firmware + init.py
-3. Test UART bus, ESP-NOW mesh
+**ESP32:**
+1. Write C++ code in Arduino IDE
+2. Compile and upload to ESP32
+3. Test BLE connection with phone app
+4. Test UART bridge to Arduino
 
-**M5 Camera:**
-1. Write Python web server + HTML/JS UI
-2. Upload MicroPython firmware
-3. Test web UI, UART logging
+**Phone App:**
+1. Write Python behavior script (Kivy/BeeWare)
+2. Test on emulator or single bot
+3. Test BLE connection to ESP32
+4. Deploy to all 30 phones on team's bots
 
 ## Deployment
 
 **Rental Fleet:**
-- All 60 bots in fleet run identical firmware
+- All bots run identical ESP32/Arduino firmware
 - Version tracked in Logistics Operations inventory
 - Updates deployed between events
 
-**Custom Mods:**
-- Pilots modify init.py (M5 Atom)
-- Upload via web UI or SD card
-- Document in Knowledge Commons for recognition
+**Pilot Customization:**
+- Pilots write behavior scripts (Python)
+- Upload to all 30 phones before match
+- Same firmware, different strategies
+- Share strategies via Knowledge Commons
 
 ## Data Collection
 
-**UART Logs (Critical for Dataset):**
-- M5 Camera logs all bus traffic to SD card
+**Match Logs (Critical for Dataset):**
+- Each phone records POV footage (60 camera angles per match!)
+- Each phone logs all BLE traffic and telemetry
 - Auto-uploads to Knowledge Commons after match
 - Collision events extracted for ML training
-- Complete communication record (every motor command, status update)
 
 **Why This Matters:**
-The UART logs are the raw data that proves the dataset captures real swarm physics. When the Virtual Arena Simulator is trained on these logs and achieves 85%+ accuracy, it validates the entire dataset for commercial licensing.
+The match logs are the raw data that proves the dataset captures real swarm physics. When the Virtual Arena Simulator is trained on these logs and achieves 85%+ accuracy, it validates the entire dataset for commercial licensing.
 
 ---
 

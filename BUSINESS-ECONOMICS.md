@@ -33,7 +33,7 @@
 
 ## Our Inversion: Start from Economics Backward
 
-### The €300 Constraint (10cm SMARS Platform)
+### The €300 Constraint (Starter Class Platform)
 
 **Forces simplicity:** Must use commodity parts (ESP32, M5Stack, 3D printed chassis)
 
@@ -232,7 +232,7 @@ Every actual deployment faces these threats:
 ### Participants (Initiates)
 
 **Free to join, pay for:**
-- Awakening Modules (€50 ESP32 retrofit kits)
+- Awakening Modules (€50 phone + ESP32 retrofit kits)
 - Competition entry fees (€50-100, goes into prize pools)
 - Rental bots if needed (€50-100 per event)
 

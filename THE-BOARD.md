@@ -68,7 +68,7 @@ Reward split: €500 per successful pilot + 1,000 XP
 ```
 HARDWARE POST (⚙ Hardware Guild)
 
-Title: Roomba 560 Resurrection with ESP32
+Title: Roomba 560 Resurrection with Phone + ESP32
 Posted by: eve_tallinn
 Guild: ⚙ Hardware
 Design files: GitHub link
@@ -76,8 +76,8 @@ Cost: €50 retrofit (Awakening Module)
 Remixes: 12 variants created
 Upvotes: 87
 
-Description: How to retrofit 2008 Roomba 560 with M5 Atom,
-enable WiFi control, add camera, compete in Arena matches.
+Description: How to retrofit 2008 Roomba 560 with old phone + ESP32 over USB UART,
+enable WiFi control, phone camera POV, compete in Arena matches.
 
 Remix rewards: €5 per validated remix (funded by bot rental revenue)
 ```
@@ -258,7 +258,7 @@ Master:       50+ resurrections
 charlie_hamburg
 ⚙ Hardware Rating: Engineer (12 resurrections)
 ├─ Roomba series: 4 models
-├─ SMARS mods: 6 variants
+├─ Starter Class mods: 6 variants
 ├─ Custom builds: 2 designs
 ├─ Total remixes by others: 89
 └─ Remix royalties earned: €445

@@ -44,10 +44,26 @@ This data trains the next generation of AI systems for physical-world automation
 
 **Victory condition:** Most bots in opponent's goal circle when timer hits zero
 
-**The Bots:** €50 open-source SMARS robots (3D-printable) running MicroPython on ESP32
-- M5 Atom controller + M5Stack Camera
-- WiFi-only communication (no mesh, no LoRa)
-- Pilots modify firmware, hardware, sensors within spec limits
+### Robot Classes
+
+Two official classes. **Each bot has a phone mounted on it** (one phone per bot, 30 phones per team, 60 phones on the field):
+
+| Class | Size | Cost (incl. phone) | Use Case |
+|-------|------|-------------------|----------|
+| **Starter (20cm)** | Fits 20cm circle, 20cm height max | €100-150 | Learning, Swarm Sumo |
+| **Maintenance (60cm)** | Fits 60cm circle, 60cm height max | €250-450 | Bounties, Infrastructure |
+
+**Starter Class (20cm):** Low-cost entry point. 3D-printed chassis, N20 motors, basic sensors. Perfect for schools, beginners, casual events.
+
+**Maintenance Class (60cm):** Validated for real work. Weatherproof, modular attachments, full sensor suite. Used for bounty challenges and infrastructure maintenance contracts.
+
+See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full details.
+
+### Competition Types
+
+**Swarm Sumo (Both Classes):** Two teams try to get as many bots into opponent's goal circle as possible in 90 seconds. The classic format.
+
+**Bounty Challenges (Maintenance Class):** Single-team attempts to solve real-world tasks (pipe inspection, drainage clearing, surface scanning). No opponent—played for time/result to validate bounty solutions. Winners get design validated for deployment.
 
 ### Why Autobattler Format
 
@@ -136,9 +152,9 @@ timestamp,event_type,executed_by,data
 - Corporate: €1400/day (team building with custom scenarios)
 
 **Sales model:**
-- Awakening Modules: €50 (ESP32 retrofit kit for obsolete robots)
-- SMARS kits: €50/bot (BOM cost, open-source design)
-- School packages: €300 (6-bot starter kit + curriculum)
+- Awakening Modules: €50 (phone + ESP32 retrofit kit for obsolete robots)
+- Starter Class kits: €50-100/bot (20cm, BOM cost, open-source design)
+- School packages: €300 (6-bot Starter Class kit + curriculum)
 
 **Guild distribution (MLM-style but with safeguards):**
 - Mechanists (event organizers): 20% module sales + 30% ticket revenue
@@ -152,14 +168,18 @@ timestamp,event_type,executed_by,data
 
 ### Manufacturing (Open Source Hardware)
 
-**SMARS platform:** Fully open-source, 3D-printable robot chassis
+**Two robot classes:** Both fully open-source, 3D-printable
+- **Starter Class (20cm):** €50-100 BOM, N20 motors, basic sensors
+- **Maintenance Class (60cm):** €200-400 BOM, brushless motors, full sensor suite
+
+**All designs include:**
 - STL files on GitHub (free)
-- Bill of Materials: €50 (AliExpress/Mouser)
-- Assembly guide + firmware (MicroPython for ESP32)
+- Bill of Materials with sourcing links
+- Assembly guide + Arduino firmware
 
 **Anyone can manufacture:**
-- Schools 3D print their own fleets
-- Hobbyists build custom modifications
+- Schools 3D print Starter Class fleets
+- Hobbyists build custom modifications within class constraints
 - Event organizers bulk-order for rentals
 - Commercial partners produce at scale
 
@@ -264,7 +284,7 @@ Physical Matches → Timeline Events → Build Collision LUT → Sim Matches →
 - **Blender** (offline rendering) - fully open source, scriptable
 - **Autobattler format** - 90-second matches, no operator interference
 - Writes identical events.csv format as physical matches
-- Same MicroPython code runs in simulator as on ESP32s
+- Same Python swarm code runs against physical bots and virtual bots
 - Collision LUT built from real recorded world data
 
 **Game server architecture (no physics engine):**
@@ -349,31 +369,45 @@ Sports league infrastructure and media production engine
 
 ## Competition Format Details
 
+### Swarm Sumo (Main Competition)
+
 **Match Structure:**
 - 90-second rounds
 - 2v2 teams (Pilot + Hacker per team)
 - 60 bots total (30 per team)
 - 3m × 3m arena
-- Goal: Most bots in opponent's circle when time expires
+- Goal: Most bots in opponent's goal circle when time expires
 
-**The Platform:**
-- SMARS chassis (open-source, 3D-printable)
-- M5 Atom (ESP32) + M5Stack Camera
-- WiFi-only communication
-- MicroPython firmware
-- €50/bot build cost
+**Robot Classes:**
+- **Starter Class (20cm):** €50-100/bot, great for learning and casual events
+- **Maintenance Class (60cm):** €200-400/bot, championship-level competition
 
-**Entry Pathways:**
-1. **Rental:** Show up, pay €50-100, compete same day
-2. **Builder:** 3D print fleet at home, customize within spec
-3. **Resurrection:** Retrofit obsolete robots with €50 Awakening Module
-4. **Hybrid:** Own some bots, rent the rest
+### Bounty Challenges (Special Events)
+
+**Format:**
+- Single team attempts real-world task simulation
+- No opponent—played for time or result
+- Success validates bounty solution for real deployment
+
+**Example Bounties:**
+- Pipe inspection: Navigate 10m pipe, identify defects
+- Drainage clearing: Remove debris from drain grate
+- Surface scanning: Photograph wall for crack analysis
+
+**Only Maintenance Class (60cm)** robots are eligible for bounties.
+
+### Entry Pathways
+
+1. **Rental:** Show up, pay €50-100, compete same day with Starter Class
+2. **Builder:** 3D print own fleet, customize within class constraints
+3. **Resurrection:** Retrofit obsolete robots with €50 Awakening Module (phone + ESP32 + actuators)
+4. **Progression:** Master Starter Class → Build Maintenance Class → Win bounties
 
 **Why This Format:**
 - Forces AI copilot use (30 bots in 90 seconds impossible manually)
 - Captures human-AI collaboration under time pressure
 - Adversarial WiFi attacks test real-world resilience
-- Strategies transfer to warehouse logistics, inspection, security
+- Bounties create path from competition to income
 
 ---
 
@@ -394,7 +428,7 @@ Sports league infrastructure and media production engine
 **⚙ Hardware Guild (Gold Ascending Coil)**
 - Retrofit and customize obsolete robotics
 - Rating: Resurrections completed + remix count
-- Entry path: Modify SMARS or resurrect obsolete hardware ("Resurrection through transformation")
+- Entry path: Build custom bots or resurrect obsolete hardware ("Resurrection through transformation")
 
 **⭐ Sponsorship Guild (Platinum Twin Sparks)**
 - Match teams with funding
@@ -411,11 +445,13 @@ See [THE-BOARD.md](THE-BOARD.md) for complete details.
 
 "What is broken can be reborn. What is obsolete can evolve."
 
-**The Ise Shrine Model:** Since 690 CE, Japan's Ise Grand Shrine has been rebuilt every 20 years to preserve knowledge through the act of rebuilding. Robot Arena applies this to engineering: every Roomba retrofitted, every SMARS bot modified, every swarm strategy documented. The machines evolve. The skills persist.
+**The Ise Shrine Model:** Since 690 CE, Japan's Ise Grand Shrine has been rebuilt every 20 years to preserve knowledge through the act of rebuilding. Robot Arena applies this to engineering: every Roomba retrofitted, every Starter Class bot modified, every swarm strategy documented. The machines evolve. The skills persist.
 
 **Education masquerading as entertainment.** Questions first, solutions second. Engineers avoid financial and social problems. We solve business, marketing, and monetization so engineers can focus on building and optimizing.
 
 ---
+
+For robot class specifications (20cm Starter, 60cm Maintenance), see [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md).
 
 For detailed technical architecture, see [ARCHITECTURE.md](ARCHITECTURE.md).
 

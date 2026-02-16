@@ -29,44 +29,46 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 
 ### `/platforms/`
 
-**`/smars-base/`** - Phase 1 Competition Platform (Years 1-2)
-- Official SMARS specification and reference design
-- M5Stack Camera + M5 Atom integration guide
-- MicroPython firmware repository
-- Complete BOM with supplier links (€50/bot)
+**`/starter-class/`** - Entry Level (20cm)
+- Official Starter Class specification and reference design (must fit 20cm circle, 20cm height max)
+- ESP32 + Arduino firmware (Arduino IDE)
+- Complete BOM with supplier links (€50-100/bot)
 - 3D printable STL files (CC-BY-SA license)
+- Use case: Swarm Sumo competitions, schools, learning
+
+**`/maintenance-class/`** - Professional (60cm)
+- Official Maintenance Class specification (must fit 60cm circle, 60cm height max)
+- Weatherproof chassis design with modular attachment system
+- Enhanced compute platform (ESP32 + optional Raspberry Pi)
+- Complete BOM with supplier links (€200-400/bot)
+- Use case: Bounty challenges, infrastructure maintenance contracts
+
+See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 
 **`/pilot-modifications/`** - Community Improvements
 - Motor upgrades and alternative drive systems
-- Sensor additions (IR, ultrasonic, IMU)
+- Sensor additions (IR, ultrasonic, IMU, lidar)
 - Power optimization (better voltage regulation, efficiency)
 - Structural improvements (rigidity, crash resistance)
 - **All modifications documented:** CAD files, BOM diffs, performance impact, creator credited
 
-**`/resurrection-archive/`** - Obsolete Robot Revival (New - Sustainability Track)
+**`/resurrection-archive/`** - Obsolete Robot Revival (Sustainability Track)
 - **Purpose:** "What is broken can be reborn. What is obsolete can evolve."
 - Database of successfully resurrected robots (Roomba 500 series, WowWee Robosapien, Anki Cozmo, RC cars, robotic vacuums)
-- **Awakening Module** integration guides (ESP32 + M5Stack Camera retrofit instructions)
+- **Awakening Module** integration guides (phone + ESP32 over USB UART for custom actuators)
 - Step-by-step photo/video documentation (wiring diagrams, code, troubleshooting)
 - Failure logs (what didn't work—equally valuable for research)
-- BOM for each resurrection (often €20-40 in parts vs €50 for new SMARS)
-- Performance comparison (resurrected Roomba vs stock SMARS in specific scenarios)
+- BOM for each resurrection (often €20-40 in parts vs €50-100 for new Starter Class)
+- Performance comparison (resurrected Roomba vs stock Starter Class in specific scenarios)
 - **Quarterly Resurrection Challenges:** Target specific obsolete platforms, prizes for successful conversions
 - **Viral Content Potential:** Before/after videos, "saving robots from e-waste" narrative
 
-**`/custom-platform/`** - Phase 2 Platform (Years 3+)
-- 50cm weatherproof chassis design
-- Modular attachment system for industry tools
-- Enhanced compute platform (Raspberry Pi 4/5)
-- Outdoor operation specs
-
 ### `/firmware/`
 
-**`/official-micropython/`** - Base Trigger System
-- HTTP API specification (how bots receive commands)
-- Trigger queue implementation
-- Camera stream server (640x480@30fps)
-- Basic navigation (go straight until timer/obstacle)
+**`/official-arduino/`** - Base Firmware (Arduino IDE)
+- BLE command protocol specification (how bots receive commands from phone)
+- ESP32 BLE server firmware
+- Arduino motor controller firmware
 
 **`/pilot-forks/`** - Custom Firmware (Must Remain Compatible)
 - Optimized motion control algorithms
@@ -136,7 +138,7 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 - Failed coordination attempts (what went wrong, why)
 - Effective hacker attacks (which vulnerabilities exploited)
 - Defensive responses (how pilots adapted to ongoing attacks)
-- **Resurrection performance data:** How resurrected robots performed vs SMARS baseline (mobility, durability, coordination effectiveness)
+- **Resurrection performance data:** How resurrected robots performed vs Starter Class baseline (mobility, durability, coordination effectiveness)
 
 **`/collision-events/`** - Extracted Collision Data (NEW - Critical for Simulator)
 - Collision events extracted from UART logs
@@ -209,7 +211,7 @@ When someone needs a capability that doesn't exist yet (glass-washing module, st
 
 **Initial Seed (€10k):**
 - London bus company needs glass-washing for 30-bot inspection swarm
-- Posts bounty: "Develop glass-washing attachment for SMARS platform, must clean 1m² in 90 seconds, €300 budget per module"
+- Posts bounty: "Develop glass-washing attachment for Starter Class platform, must clean 1m² in 90 seconds, €300 budget per module"
 - Seeds pool with €10k
 
 **Pool Growth (€12.5k total):**
@@ -271,14 +273,14 @@ Resurrection Challenges are a special category of bounty where the target is a s
 
 **Q1 2025: Roomba 500 Series**
 - Prize pool: €5k (Robot Arena seed) + community additions
-- Challenge: Retrofit Roomba 500 with Awakening Module, compete in Division 2 (Obstacle Course)
+- Challenge: Retrofit Roomba 500 with Awakening Module (phone + ESP32), compete in Division 2 (Obstacle Course)
 - Success criteria: Place in top 50% of Division 2 matches at sanctioned event
 - Knowledge release: Wiring diagrams, firmware, performance analysis enters `/resurrection-archive/roomba-500/`
 
 **Q2 2025: RC Car Platforms**
 - Prize pool: €3k + community
-- Challenge: 4WD RC car base with Awakening Module, compete in Division 1 (Open Arena)
-- Success criteria: Match or exceed stock SMARS speed and coordination
+- Challenge: 4WD RC car base with Awakening Module (phone + ESP32), compete in Division 1 (Open Arena)
+- Success criteria: Match or exceed stock Starter Class speed and coordination
 - Knowledge release: Compatible models list, retrofit guide, failure modes
 
 **Bounty Categories:**

@@ -7,20 +7,22 @@
 The hardware arm that enables the franchise model and funds the ecosystem. Any organization that wants to host a sanctioned 2v2 swarm competition shouldn't need to invest €30k+ in building 60-bot fleets and arena infrastructure from scratch. They rent it, run the event, generate dataset, return the equipment.
 
 **The Business Model Sweet Spot:**
-- **Pilots:** Can build own custom SMARS bots (€50 each) OR rent from event OR resurrect obsolete robots with Awakening Modules (€50)
+- **Pilots:** Build Starter Class (20cm, €50-100) or Maintenance Class (60cm, €200-400) bots OR rent from event OR resurrect obsolete robots with Awakening Modules (€50)
 - **Schools/Events:** Rent complete competition packages, focus on running great events
 - **Rental Revenue + Module Sales:** Funds manufacturing next generation of fleets + operational sustainability
 - **Dataset:** All matches (rental, owned, or resurrected bots) contribute to Knowledge Commons
 - **Sustainability Narrative:** Resurrection path transforms e-waste into competitive advantage
+
+See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full robot class details.
 
 ---
 
 ## Core Functions
 
 ### Build
-- Manufacture 60-bot SMARS swarm fleets (Phase 1, Years 1-2)
-- Manufacture 60-bot custom platform fleets (Phase 2, Years 3+)
-- **Produce Awakening Modules** (ESP32 retrofit kits for obsolete robot resurrection)
+- Manufacture 60-bot Starter Class (20cm) swarm fleets
+- Manufacture 60-bot Maintenance Class (60cm) fleets for bounties and infrastructure work
+- **Produce Awakening Modules** (phone + ESP32 retrofit kits for obsolete robot resurrection)
 - Produce modular 3x3m arena systems with camera infrastructure
 - Assemble pilot interface kits (screens, input devices, AI integration)
 - Build hacker station packages (network monitoring, attack tooling)
@@ -53,35 +55,50 @@ The hardware arm that enables the franchise model and funds the ecosystem. Any o
 
 ### `/fleet-designs/`
 
-**Phase 1: SMARS Swarm Fleets (Years 1-2)**
-- **60-bot competition fleet:** Complete SMARS builds with M5Stack Camera + M5 Atom
-- **Cost per fleet:** €3k hardware + €1k labor/assembly = €4k total
-- **Rental rate:** €2k/weekend → breakeven at 2 events, profit after
+**Starter Class Fleets (20cm) - Entry Level**
+- **60-bot competition fleet:** 20cm platforms with ESP32 + Arduino firmware
+- **Cost per fleet:** €4.5k hardware + €1k labor/assembly = €5.5k total
+- **Rental rate:** €2k/weekend → breakeven at 3 events, profit after
 - **Spares inventory:** 20% spare bots (12 extra) for quick replacement
 - **Charging infrastructure:** 60-bot charging station, 2-hour full charge cycle
-- **Transport cases:** Stackable pelican cases, each holds 10 bots
+- **Transport cases:** Stackable pelican cases, each holds 12 bots
+- **Use case:** Swarm Sumo competitions, schools, casual events
 
-**Phase 2: Custom Platform Fleets (Years 3+)**
-- **60-bot competition fleet:** 50cm weatherproof platforms with modular attachments
+**Maintenance Class Fleets (60cm) - Professional**
+- **60-bot competition fleet:** 60cm weatherproof platforms with modular attachments
 - **Cost per fleet:** €18k hardware + €3k labor/assembly = €21k total
 - **Rental rate:** €3-4k/weekend → breakeven at 6-7 events
-- **Outdoor capability:** Enables Year 3+ industry-relevant scenarios
+- **Outdoor capability:** Enables industry-relevant bounty scenarios
 - **Modular tooling:** Grippers, sensors, cleaning attachments for specific challenges
+- **Use case:** Bounty challenges, infrastructure maintenance contracts
 
 ### `/awakening-modules/`
 
 **Philosophy:** "What is broken can be reborn. What is obsolete can evolve."
 
-The Awakening Module product line enables participants to resurrect obsolete robots (Roomba 500 series, RC cars, broken toys, failed kickstarter robots) and compete alongside SMARS fleets. This creates a sustainability narrative, lowers entry barriers, and generates viral content ("saving robots from e-waste").
+The Awakening Module product line enables participants to resurrect obsolete robots (Roomba 500 series, RC cars, broken toys, failed kickstarter robots, stuck lawn mowers) and give them new autonomous capabilities. This creates a sustainability narrative, lowers entry barriers, and generates viral content ("saving robots from e-waste").
+
+**Architecture:** Phone + ESP32 over USB UART
+- **Phone (mounted on robot):** Runs Python behavior script + webserver for remote control
+- **ESP32 (USB UART connection to phone):** Controls custom actuators (servos, motors, sensors)
+- **Why this architecture:** Cheap old phones provide camera, WiFi, compute power. ESP32 handles real-time motor control and sensor reading.
+
+**Example Use Case: Lawn Mower Rescue Bot**
+A robot that unsticks autonomous lawn mowers when they get stuck:
+1. Servo #1: Attaches motor to wheel (extra traction)
+2. Motor: Drives extra wheel to push mower out of rut
+3. Servo #2: Presses the "continue" button on mower control panel
+4. Phone: Runs Python script coordinating the sequence, streams camera for remote monitoring
 
 **Base Module (€50 retail, €30 COGS, €20 margin):**
 - **Components:**
+  - Old Android phone (user-provided or sourced from e-waste)
   - ESP32 dev board (M5 Atom or equivalent)
-  - M5Stack Camera module (640x480@30fps)
-  - Power distribution board (voltage regulation, battery management)
-  - MicroPython firmware pre-loaded (HTTP API compatible with arena system)
+  - USB OTG cable (phone to ESP32)
+  - Basic wiring kit (breadboard, jumper wires, connectors)
+  - Python app pre-installed (webserver + ESP32 UART communication)
 - **Packaging:**
-  - Quick-start guide with photos for 5 common obsolete robots (Roomba, RC car, robotic vacuum, toy tank, broken drone)
+  - Quick-start guide with photos for 5 common obsolete robots (Roomba, RC car, robotic vacuum, toy tank, lawn mower)
   - Wiring diagram card (laminated, waterproof)
   - QR code linking to Knowledge Commons Resurrection Archive
   - Metal sticker: "Reawakened by Robot Arena"
@@ -89,24 +106,29 @@ The Awakening Module product line enables participants to resurrect obsolete rob
   - Individual pilots resurrecting home robots for practice
   - Schools using e-waste for educational sustainability projects
   - Events offering "Resurrection Workshops" (bring broken robot, leave with competitor)
+  - Home automation (unsticking lawn mowers, opening stuck gates, remote monitoring)
 
 **Advanced Module (€120 retail, €75 COGS, €45 margin):**
 - **Everything in Base Module plus:**
-  - IMU sensor (gyroscope + accelerometer for multi-level arenas)
-  - Ultrasonic sensors (obstacle detection, collision avoidance)
-  - Upgraded motors (if original robot motors insufficient)
-  - Advanced mesh networking firmware (resilient to hacker attacks)
+  - IMU sensor (gyroscope + accelerometer)
+  - Ultrasonic sensors (obstacle detection)
+  - 2× SG90 servos (for attachments, button pressing)
+  - N20 gear motor + wheel (extra mobility)
+  - Motor driver board (L298N mini)
+  - Weatherproof phone case
 - **Use Cases:**
   - Serious competitors optimizing resurrected robots for advanced divisions
   - Research labs testing swarm coordination on heterogeneous platforms
   - Corporate workshops demonstrating IoT retrofit capabilities
+  - Infrastructure assistance (helping stuck autonomous equipment)
 
 **School Kit (€300 retail, €180 COGS, €120 margin):**
 - **Components:**
   - 6× Base Awakening Modules
+  - 6× old phones (sourced from recycling programs)
   - 8-week classroom curriculum (lesson plans, assessment rubrics, video tutorials)
   - Online instructor training (2-hour webinar, certification)
-  - Optional: 6× SMARS chassis kits (if school doesn't have obsolete robots)
+  - Optional: 6× Starter Class chassis kits (if school doesn't have obsolete robots)
 - **Use Cases:**
   - Middle schools (ages 11-14) running robotics clubs
   - High schools integrating into STEM curriculum
@@ -120,7 +142,7 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 
 **Manufacturing:**
 - **Assembly:** In-house (Tallinn facility) or contract manufacturer
-- **Components:** Bulk purchase from AliExpress, Mouser (M5Stack official distributor)
+- **Components:** Bulk purchase from AliExpress, Mouser
 - **Lead Time:** 2-week production run for 500 units
 - **Inventory:** Keep 200 units in stock (fulfill within 48 hours), manufacture in batches of 500
 
@@ -129,6 +151,7 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 - **Resurrection Challenges:** Quarterly competitions targeting specific obsolete platforms (prizes for successful conversions)
 - **YouTube Series:** "Resurrecting Dead Robots" (step-by-step guides, failures, successes)
 - **Sustainability Angle:** "E-waste to competitive advantage" (appeals to environmentally-conscious participants)
+- **Utility Angle:** "Your old phone can rescue your stuck lawn mower"
 
 ### `/arena-systems/`
 
@@ -188,7 +211,7 @@ The Awakening Module product line enables participants to resurrect obsolete rob
 - **Annually:** Full refurbishment, integrate successful custom mods from pilots
 
 **Depreciation Planning:**
-- SMARS fleets: 3-year lifespan (replaced by Phase 2 custom platform)
+- Starter Class fleets: 3-year lifespan (replaced by Phase 2 custom platform)
 - Custom platform fleets: 5-year lifespan
 - Arena systems: 5-year lifespan (minimal wear)
 - Pilot/hacker interfaces: 3-year lifespan (technology refresh)
@@ -365,7 +388,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 ### Event Rentals (Primary Revenue Driver)
 
 **Competition Package (€2k/weekend):**
-- 60-bot SMARS fleet (or custom platform Year 3+)
+- 60-bot Starter Class fleet (or custom platform Year 3+)
 - 3x3m arena system
 - 2× pilot stations + 1× hacker station
 - Technical support (remote during event)
@@ -373,10 +396,10 @@ This creates recurring content for YouTube, adds variety to event programming, a
 - **Add-on:** Resurrection Workshop (bring broken robots, leave with Awakening Modules) +€500
 
 **Economics:**
-- Fleet cost: €4k (SMARS) or €21k (custom)
-- Breakeven: 2 events (SMARS) or 7 events (custom)
+- Fleet cost: €4k (Starter Class) or €21k (custom)
+- Breakeven: 2 events (Starter Class) or 7 events (custom)
 - Utilization target: 15 events/year per fleet
-- Profit per fleet per year: €26k (SMARS) or €24k (custom)
+- Profit per fleet per year: €26k (Starter Class) or €24k (custom)
 
 **School Training Package (€500/semester, subsidized):**
 - 12-bot training fleet (smaller, 4v4 practice)
@@ -396,7 +419,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 
 ### Component Sales (At-Cost, Ecosystem Growth)
 
-**SMARS Build Kits:**
+**Starter Class Build Kits:**
 - Complete BOM for 1 bot (€50)
 - Sold at cost (zero margin)
 - **Purpose:** Enable pilots to build custom fleets, drives competition participation
@@ -404,22 +427,22 @@ This creates recurring content for YouTube, adds variety to event programming, a
 
 **3D Print Files & Firmware:**
 - Free download (CC-BY-SA license)
-- **Purpose:** Maximize SMARS ecosystem adoption, not a revenue source
+- **Purpose:** Maximize Starter Class ecosystem adoption, not a revenue source
 
 ### Scaling Economics
 
-**Year 1 (3 Fleets, SMARS):**
+**Year 1 (3 Fleets, Starter Class):**
 - **Investment:** €12k (3× €4k fleets)
 - **Rental Revenue:** €40-60k (15 events/fleet × €2k × 3 fleets, conservative)
 - **Profit:** €28-48k (funds 7-12 more fleets)
 
-**Year 2 (10 Fleets, SMARS + EU Expansion):**
+**Year 2 (10 Fleets, Starter Class + EU Expansion):**
 - **Investment:** €40k (10× €4k fleets, funded by Year 1 profit)
 - **Rental Revenue:** €200-300k (20 events/fleet × €2k × 10 fleets)
 - **Profit:** €160-260k (funds Phase 2 custom platform development)
 
-**Year 3 (10 Custom Fleets + 20 SMARS Fleets for Schools):**
-- **Investment:** €210k (10× €21k custom) + €80k (20× €4k SMARS)
+**Year 3 (10 Custom Fleets + 20 Starter Class Fleets for Schools):**
+- **Investment:** €210k (10× €21k custom) + €80k (20× €4k Starter Class)
 - **Rental Revenue:** €600-800k (20 events/fleet × €3k × 10 custom + school rentals)
 - **Profit:** €310-510k (funds geographic expansion, franchise model)
 
@@ -430,7 +453,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 ### Phase 1: Prove Rental Model (Months 1-12)
 
 **Manufacture:**
-- 3× 60-bot SMARS fleets (€12k investment)
+- 3× 60-bot Starter Class fleets (€12k investment)
 - 3× arena systems (€6k)
 - Pilot/hacker interfaces (€8k)
 - **Total:** €26k capital investment (from €300k EIC Stage 1 grant)
@@ -450,7 +473,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 ### Phase 2: Scale Within Estonia (Months 13-24)
 
 **Manufacture:**
-- 7 additional SMARS fleets (€28k, funded by Year 1 rental profit)
+- 7 additional Starter Class fleets (€28k, funded by Year 1 rental profit)
 - 5 school training packages (€20k)
 - **Total:** 10 competition fleets + 5 school fleets
 
@@ -487,7 +510,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 ### Phase 4: Self-Sustaining Network (Years 5-6+)
 
 **Fleet Count:**
-- 50+ competition fleets globally (mix custom platform + SMARS for schools)
+- 50+ competition fleets globally (mix custom platform + Starter Class for schools)
 - **Utilization:** 25-30 events/year per fleet (weekend saturation in major markets)
 - **Rental Revenue:** €500k+/year (direct ownership) + €200k/year (franchise revenue share)
 
@@ -511,7 +534,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 6. **Repeat**
 
 **Key Insight:**
-Pilots who build custom SMARS bots drive innovation (custom mods, new strategies). But schools and casual participants renting bots drive volume (more matches, more data, more revenue). Both are essential.
+Pilots who build custom Starter Class bots drive innovation (custom mods, new strategies). But schools and casual participants renting bots drive volume (more matches, more data, more revenue). Both are essential.
 
 **Rental is not competitor to custom builds—it's complementary:**
 - Rentals lower barrier to entry (more total pilots)

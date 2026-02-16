@@ -1,13 +1,20 @@
 # Robot Arena Technical Architecture
 
-**Version:** 1.0
-**Last Updated:** 2026-01-07
+**Version:** 2.0
+**Last Updated:** 2026-02-11
 
 ---
 
 ## Overview
 
-Robot Arena is a competitive robotics sport with three main pillars (Knowledge Commons, Logistics Operations, League Management) supported by two technical foundations: **Physical Bot Firmware** and **Virtual Arena Simulator**. This document describes the complete technical architecture from hardware to ML models.
+Robot Arena is an autobattler robotics sport with three main pillars (Knowledge Commons, Logistics Operations, League Management) supported by two technical foundations: **Physical Bot Firmware** and **Virtual Arena Simulator**. This document describes the complete technical architecture from hardware to ML models.
+
+**Key Architecture Decision:** Each bot has a phone mounted on it running Python logic. One phone per bot, 30 phones per team, 60 phones on the field. The ESP32/RISC-V microcontrollers run pure Arduino C++ firmware—no MicroPython. This provides the best balance of:
+- **Compute power:** Each bot has a full smartphone for AI/logic (no shared bottleneck)
+- **Camera:** Each phone provides POV recording for the dataset
+- **Speed:** Arduino C++ gives deterministic real-time motor control
+- **Libraries:** Arduino ecosystem has extensive sensor/motor support
+- **LLM capacity:** LLMs are better at generating Arduino C++ than MicroPython
 
 ---
 
@@ -32,12 +39,12 @@ Robot Arena is a competitive robotics sport with three main pillars (Knowledge C
 │                    ┌────────────┴────────────┐                  │
 │                    │                         │                  │
 │         ┌──────────▼──────────┐   ┌─────────▼──────────┐       │
-│         │  Physical Firmware  │   │ Virtual Simulator  │       │
+│         │  Physical System    │   │ Virtual Simulator  │       │
 │         │                     │   │                    │       │
-│         │ - Arduino Motor     │   │ - Python Emulator  │       │
-│         │ - M5 Atom Logic     │   │ - Game Server      │       │
-│         │ - M5 Camera WebUI   │   │ - Collision LUT    │       │
-│         │ - UART Bus Protocol │   │ - Blender Render   │       │
+│         │ - Phone App (Python)│   │ - Python Emulator  │       │
+│         │ - Arduino Firmware  │   │ - Game Server      │       │
+│         │ - Phone Camera      │   │ - Collision LUT    │       │
+│         │ - BLE/WiFi Protocol │   │ - Blender Render   │       │
 │         └─────────────────────┘   └────────────────────┘       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -47,414 +54,478 @@ Robot Arena is a competitive robotics sport with three main pillars (Knowledge C
 
 ## Physical Bot Architecture
 
-### Hardware Stack - Shared UART Bus
+### Robot Classes
+
+Robot Arena has two official robot classes. See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full details.
+
+| Class | Size Constraint | Cost | Use Case |
+|-------|-----------------|------|----------|
+| **Starter (20cm)** | Fits in 20cm circle, max 20cm height | €50-100 | Learning, Swarm Sumo |
+| **Maintenance (60cm)** | Fits in 60cm circle, max 60cm height | €200-400 | Bounties, Infrastructure |
+
+Both classes share the same software architecture (phone app + Arduino firmware).
+
+### Hardware Stack - Phone + Arduino Firmware
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      SMARS Bot (10cm Platform)                   │
+│          Single Bot (1 of 30 per team, 60 total on field)       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │          Shared UART Bus (921600 baud, broadcast)        │  │
-│  │                 All modules listen, selective ignore      │  │
+│  │           Phone (Mounted on Bot - Python App)             │  │
 │  │                                                           │  │
-│  │    ┌─────────────┐   ┌─────────────┐   ┌────────────┐   │  │
-│  │    │ M5 Camera   │   │  M5 Atom    │   │  Arduino   │   │  │
-│  │    │ ESP32-S3    │   │  ESP32      │   │  Nano/Pro  │   │  │
-│  │    └──────┬──────┘   └──────┬──────┘   └─────┬──────┘   │  │
-│  │           │                 │                 │          │  │
-│  │           └─────────────────┴─────────────────┘          │  │
-│  │                  TX/RX connected to all                  │  │
+│  │  - Bot's brain: runs behavior script (Python)            │  │
+│  │  - POV camera: records match footage for dataset         │  │
+│  │  - WiFi mesh: coordinates with other bots on team        │  │
+│  │  - BLE: commands to ESP32 below                          │  │
+│  └──────────────────────────┬───────────────────────────────┘  │
+│                              │ BLE                              │
+│                              ▼                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │              ESP32 Main Controller (Arduino C++)          │  │
 │  │                                                           │  │
-│  │  Optional Sensor Modules (also on same bus):             │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐               │  │
-│  │  │  Lidar   │  │  Vision  │  │  Other   │               │  │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘               │  │
-│  │       └─────────────┴──────────────┘                     │  │
+│  │  - Receives commands from phone via BLE                  │  │
+│  │  - Executes motor commands with precise timing           │  │
+│  │  - Reads sensors (IMU, encoders, battery)                │  │
+│  │  - Streams telemetry back to phone                       │  │
+│  │  - UART to motor driver                                  │  │
+│  └──────────────────────────┬───────────────────────────────┘  │
+│                              │ UART                             │
+│                              ▼                                  │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │        Arduino Nano/Motor Driver (Arduino C++)            │  │
+│  │                                                           │  │
+│  │  - PWM motor control (precise timing)                    │  │
+│  │  - Wheel encoder reading                                 │  │
+│  │  - Battery monitoring                                    │  │
+│  │  - Emergency stop handling                               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  Power: 7.4V LiPo (2S) → 5V Buck → All Modules                 │
-│  Weight: ~200g total (within competition spec)                  │
-│  Cost: €50-120 depending on configuration                       │
+│  Starter (20cm): 7.4V 500mAh LiPo, ~200g, €50-100              │
+│  Maintenance (60cm): 11.1V 5000mAh LiPo, ~5kg, €200-400        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Insight:** Single UART bus, all modules share TX/RX lines. Each module:
-- **Listens** to all packets
-- **Ignores** commands not meant for them
-- **Transmits** when needed
+**Key Insight:** Each bot has its own phone mounted on it. The phone is the bot's brain—it runs the behavior script and records POV footage. The ESP32/Arduino runs pure C++ firmware compiled in Arduino IDE. This separation provides:
+- **Phone (per bot):** Runs behavior script, POV camera, WiFi mesh coordination
+- **ESP32:** Handles real-time communication, sensor fusion
+- **Arduino:** Handles precise motor timing, safety
 
-**Example Traffic Flow:**
+**Communication Flow:**
 ```
-M5 Camera sends: [STX][0x0F Custom][length][web_command_data][CRC]
-  → M5 Atom sees it, parses custom data, executes
-  → Arduino sees it, command type is Custom (not 0x01-0x0E), ignores
+Before Match (Preparation):
+  - Pilot writes behavior script with LLM assistance
+  - Script is uploaded to all 30 phones on team's bots
+  - Autobattler format: no changes once match starts
 
-M5 Atom sends: [STX][0x01 MOVE_FORWARD][duration][speed][CRC]
-  → Arduino sees it, executes motor command
-  → M5 Camera sees it, logs to SD card
+During Match (Per Bot):
+  Phone (mounted on bot):
+    - Executes uploaded behavior script (Python)
+    - Records POV camera footage
+    - Coordinates with teammates via WiFi mesh
+    - Sends motor commands to ESP32 via BLE
 
-Arduino sends: [STX][0x08 STATUS][battery_voltage][encoder_data][CRC]
-  → M5 Atom sees it, updates position estimate
-  → M5 Camera sees it, logs to SD card
+  Phone → ESP32 (BLE):
+    - High-level commands: move_forward(duration, speed)
+    - Sensor requests: get_imu(), get_battery()
+
+  ESP32 → Arduino (UART):
+    - Motor commands: [0x01][duration][speed][CRC]
+    - Status queries: [0x08][CRC]
+
+  ESP32 → Phone:
+    - Telemetry stream: position, velocity, battery
+    - Sensor data: IMU readings, encoder counts
 ```
 
 ---
 
 ### Module Responsibilities
 
-#### **M5 Camera Module (ESP32-S3)**
-**Role:** Web Server + Passive Logger
+#### **Phone (Mounted on Each Bot)**
+**Role:** Bot Brain + POV Camera + Mesh Coordination
+
+**One phone per bot. 30 phones per team. 60 phones on the field.**
 
 **Hardware:**
-- ESP32-S3 (dual-core, 8MB PSRAM)
-- OV2640 camera (640x480 @ 30fps)
-- SD card slot (for logging)
-- UART TX/RX connected to shared bus
+- Any modern smartphone (Android 10+ or iOS 14+)
+- BLE 5.0 for ESP32 communication
+- Built-in camera for POV recording
+- WiFi for mesh coordination with teammates
 
 **Software:**
-- MicroPython with web server
-- WiFi Access Point (`Bot-XX`, password protected)
-- 3-tab web interface (HTML/CSS/JS served from flash)
-- UART packet logger (saves **everything** to SD card)
-- Camera streamer (MJPEG over HTTP)
-- HTTP API for external control
+- Python app (via Kivy, BeeWare, or similar)
+- Behavior script (uploaded before match)
+- WiFi mesh protocol for team coordination
+- Telemetry logging
+- POV match recording
 
 **Responsibilities:**
-- Serve web UI to operators (3-tab interface)
-- Stream POV camera feed (640x480 @ 30fps)
-- **Listen to all UART traffic**, log everything to SD card
-- Parse HTTP requests from operators
-- Send commands to bus as **Custom (0x0F)** type
-- Store logs to SD card (timestamped, sequential files)
+- Execute behavior script autonomously during match
+- Record POV camera footage (60 camera angles per match!)
+- Coordinate with teammates via WiFi mesh
+- Send motor commands to ESP32 via BLE
+- Log all telemetry for Knowledge Commons
 
-**UART Behavior:**
-- **TX:** Sends Custom commands (web UI triggers)
-- **RX:** Logs all bus traffic (motor commands, status, sensor data, everything)
+**Why Phone Per Bot:**
+- Massive compute power per bot (no shared bottleneck)
+- 60 POV cameras generate rich dataset
+- Cheap smartphones (~€50-100 used) add minimal cost
+- Python is easier than embedded code
+- No firmware flashing—just upload new script
 
 ---
 
-#### **M5 Atom (ESP32)**
-**Role:** Pure Logic Brain
+#### **ESP32 Main Controller (Arduino C++)**
+**Role:** Communication Bridge + Sensor Hub
 
 **Hardware:**
-- ESP32-PICO-D4 (dual-core, 4MB flash)
-- MPU6886 IMU (gyro + accelerometer)
+- ESP32 (any variant: DevKit, M5 Atom, etc.)
+- MPU6886 or similar IMU (optional)
 - RGB LED (status indicator)
-- UART TX/RX connected to shared bus
+- BLE for phone communication
+- UART for motor driver communication
 
 **Software:**
-- **Vanilla MicroPython** (official ESP32 port)
-- **Custom init.py** (your application logic)
-  - UART bus listener (filters for Custom commands from Camera)
-  - Trigger queue manager
-  - Sensor fusion (IMU + encoders → position)
-  - ESP-NOW mesh networking (separate from UART bus)
-  - User Python code executor
+- Arduino C++ (compiled via Arduino IDE)
+- BLE server (receives commands from phone)
+- UART master (sends commands to motor driver)
+- Sensor reader (IMU, battery via ADC)
+- Telemetry streamer (sends data back to phone)
 
 **Responsibilities:**
-- Listen to UART bus for Custom (0x0F) commands from M5 Camera
-- Execute user-defined Python behaviors (Layer 1)
-- Manage trigger queue (queue motor commands with timing)
-- Fuse sensor data (IMU + Arduino status → position estimate)
-- Coordinate with other bots via ESP-NOW mesh (not UART)
-- Send motor commands to bus as standard types (0x01-0x0E)
-- Send telemetry/logs back to bus as Custom (0x0F) type
+- Receive high-level commands from phone via BLE
+- Translate to motor commands and send to Arduino via UART
+- Read sensors and stream telemetry to phone at 10Hz
+- Handle emergency stop (button or phone disconnect)
+- Buffer commands for smooth execution
 
-**UART Behavior:**
-- **TX:** Sends motor commands (0x01-0x06), status queries (0x08), Custom logs
-- **RX:** Listens for Custom (0x0F) from Camera, STATUS (0x08) from Arduino
+**Why Arduino IDE (not MicroPython):**
+- Faster execution (C++ vs interpreted Python)
+- Better real-time timing guarantees
+- Extensive library ecosystem (BLE, IMU, motor)
+- LLMs are better at Arduino C++ than MicroPython
+- Easier debugging with Serial Monitor
 
 ---
 
-#### **Arduino Nano/Pro (ATmega328P)**
+#### **Arduino Nano/Motor Driver (Arduino C++)**
 **Role:** Motor Controller
 
 **Hardware:**
-- ATmega328P @ 16MHz
+- ATmega328P @ 16MHz (or ESP32 if more IO needed)
 - 2x PWM outputs (motor control)
 - 2x interrupt pins (encoder inputs)
-- UART TX/RX connected to shared bus
+- UART RX from ESP32
 - Analog input (battery voltage)
 
 **Software:**
 - Arduino C++ (compiled firmware)
-- UART bus listener (filters for commands 0x01-0x0E only)
+- UART command parser
 - Motor PWM driver (precise timing)
 - Wheel encoder reader (speed feedback)
 - Battery monitor (voltage + state of charge)
 - Emergency stop handler
 
 **Responsibilities:**
-- Listen to UART bus for motor commands (0x01-0x06, 0x0A emergency stop)
+- Receive motor commands from ESP32 via UART
 - Execute motor commands with precise timing
 - Read wheel encoders (odometry)
 - Monitor battery state
-- Send status updates to bus (0x08 STATUS) at 10Hz
-
-**UART Behavior:**
-- **TX:** Sends STATUS (0x08) packets periodically
-- **RX:** Listens only for commands 0x01-0x0E, **ignores Custom (0x0F)**
+- Send status updates at 10Hz
+- Hardware emergency stop (cuts motors on signal loss)
 
 ---
 
-### UART Protocol (16-Command Specification)
+### Communication Protocols
 
-**Bus Configuration:**
-- Baud rate: 921600 (115 KB/s effective)
-- Topology: **Shared bus** (all modules TX/RX connected together)
-- Flow: Broadcast - everyone hears everything
-- Collision avoidance: Simple (modules transmit at different rates)
+#### **Phone ↔ ESP32 (BLE)**
+
+**BLE Service UUID:** `0000FFE0-0000-1000-8000-00805F9B34FB`
+
+**Characteristics:**
+```
+Command TX (Phone → ESP32):  0xFFE1  Write
+Telemetry RX (ESP32 → Phone): 0xFFE2  Notify
+Status (bidirectional):       0xFFE3  Read/Write
+```
+
+**Command Format (Phone → ESP32):**
+```
+┌──────┬────────┬──────────────┐
+│ Cmd  │ Length │   Payload    │
+│ 1B   │ 1B     │   0-18B      │
+└──────┴────────┴──────────────┘
+
+BLE MTU limits payload to ~20 bytes per packet.
+Larger commands split across multiple packets.
+```
+
+**Command Types:**
+```
+0x01  MOVE_FORWARD     - duration_ms (2B), speed (1B)
+0x02  MOVE_BACKWARD    - duration_ms (2B), speed (1B)
+0x03  TURN_LEFT        - duration_ms (2B), speed (1B)
+0x04  TURN_RIGHT       - duration_ms (2B), speed (1B)
+0x05  STOP             - (no payload)
+0x06  DRIVE            - left_speed (1B), right_speed (1B)
+0x07  GET_SENSORS      - (triggers telemetry response)
+0x08  SET_LED          - r (1B), g (1B), b (1B)
+0x09  EMERGENCY_STOP   - (no payload)
+0x0A  PING             - (no payload, expects PONG)
+```
+
+**Telemetry Format (ESP32 → Phone):**
+```
+┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
+│ Bat% │ EncL │ EncR │ AccX │ AccY │ AccZ │ GyrZ │ Flags│
+│ 1B   │ 2B   │ 2B   │ 2B   │ 2B   │ 2B   │ 2B   │ 1B   │
+└──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
+
+Sent at 10Hz (100ms intervals)
+Total: 14 bytes per packet
+```
+
+---
+
+#### **ESP32 ↔ Arduino (UART)**
+
+**Configuration:**
+- Baud rate: 115200 (simple, reliable)
+- 8N1 (8 data bits, no parity, 1 stop bit)
+- Point-to-point (not bus)
 
 **Packet Format:**
 ```
 ┌──────┬──────┬────────┬──────────────┬─────────┐
 │ STX  │ Cmd  │ Length │   Payload    │  CRC8   │
-│ 1B   │ 1B   │ 1B     │   0-255B     │  1B     │
+│ 1B   │ 1B   │ 1B     │   0-16B      │  1B     │
 └──────┴──────┴────────┴──────────────┴─────────┘
 
-STX:     0x02 (start of text)
-Cmd:     4-bit command ID + 4-bit flags
-Length:  Payload byte count
-Payload: Command-specific data
-CRC8:    Simple checksum (polynomial 0x07)
+STX: 0x02 (start of text)
+CRC8: XOR of all bytes (simple, fast)
 ```
 
-**16 Command Types:**
+**Motor Commands (ESP32 → Arduino):**
 ```
-0x00  NOP                    - No operation (keepalive)
-0x01  MOVE_FORWARD           - duration_ms (2B), speed (1B)
-0x02  MOVE_BACKWARD          - duration_ms (2B), speed (1B)
-0x03  TURN_LEFT              - duration_ms (2B), speed (1B)
-0x04  TURN_RIGHT             - duration_ms (2B), speed (1B)
-0x05  STOP                   - (no payload)
-0x06  DRIVE_DIFFERENTIAL     - left_speed (1B), right_speed (1B)
-0x07  READ_SENSOR            - sensor_id (1B)
-0x08  GET_STATUS             - (response: battery, encoders)
-0x09  SET_LED                - r (1B), g (1B), b (1B)
-0x0A  EMERGENCY_STOP         - (no payload)
-0x0B  CALIBRATE              - calibration_type (1B)
-0x0C  PING                   - (no payload)
-0x0D  RESET                  - (no payload)
-0x0E  RESERVED               - (future use)
-0x0F  CUSTOM                 - type (1B), length (2B), data (N bytes)
+0x01  MOVE_FORWARD     - duration_ms (2B), speed (1B)
+0x02  MOVE_BACKWARD    - duration_ms (2B), speed (1B)
+0x03  TURN_LEFT        - duration_ms (2B), speed (1B)
+0x04  TURN_RIGHT       - duration_ms (2B), speed (1B)
+0x05  STOP             - (no payload)
+0x06  DRIVE            - left_speed (1B), right_speed (1B)
+0x0A  EMERGENCY_STOP   - (no payload)
 ```
 
-**Command Handling by Module:**
+**Status Response (Arduino → ESP32):**
 ```
-┌──────────┬─────────────┬───────────┬────────────┐
-│ Command  │ M5 Camera   │ M5 Atom   │ Arduino    │
-├──────────┼─────────────┼───────────┼────────────┤
-│ 0x00-0x0E│ Log only    │ May listen│ Execute    │
-│ 0x0F     │ Send/Log    │ Execute   │ Ignore     │
-└──────────┴─────────────┴───────────┴────────────┘
+0x08  STATUS           - battery (1B), encL (2B), encR (2B)
+
+Sent at 10Hz or on request
 ```
 
-**Custom Command (0x0F) Structure:**
+**Example Flow:**
 ```
-Payload format for CUSTOM:
-┌──────────┬────────┬────────────────┐
-│ Type     │ Length │ Data           │
-│ 1B       │ 2B     │ 0-65535B       │
-└──────────┴────────┴────────────────┘
+Phone sends BLE command:
+  [0x01][0x03][0x07 0xD0][0x50]  // MOVE_FORWARD, 2000ms, 80%
 
-Type IDs:
-0x01 - Web UI command (from M5 Camera → M5 Atom)
-0x02 - Lidar scan data (from Lidar → M5 Atom, Camera logs)
-0x03 - Vision detection (from Vision → M5 Atom, Camera logs)
-0x04 - Mesh network packet (M5 Atom → broadcast for logging)
-0x05 - Formation coordination (M5 Atom → broadcast)
-0x06 - Debug telemetry (M5 Atom → Camera for logging)
-...
-0xFF - User-defined
-```
+ESP32 receives, translates to UART:
+  [0x02][0x01][0x03][0x07 0xD0][0x50][CRC]
 
-**Example Custom Type 0x01 (Web UI Command):**
-```
-M5 Camera receives HTTP POST /api/trigger:
-  {command: "move_forward", duration: 2000, speed: 80}
+Arduino executes motor command for 2000ms at 80% speed
 
-M5 Camera serializes to UART:
-  [0x02][0x0F][0x0A][0x01][0x00 0x06]["python_cmd_bytes"][CRC]
+Arduino sends status every 100ms:
+  [0x02][0x08][0x05][0x64][0x00 0x45][0x00 0x42][CRC]
+  // Battery 100%, EncL=69, EncR=66
 
-  0x0F = Custom command
-  0x0A = Total payload length (10 bytes)
-  0x01 = Custom type (Web UI command)
-  0x00 0x06 = Data length (6 bytes)
-  "python_cmd_bytes" = JSON or compact binary encoding
-
-M5 Atom sees this on bus:
-  - Checks command type: 0x0F (Custom)
-  - Checks custom type: 0x01 (for me!)
-  - Parses data: move_forward(2000, 80)
-  - Queues trigger
-
-Arduino sees this on bus:
-  - Checks command type: 0x0F (Custom, not for me)
-  - **Ignores entirely**
-
-M5 Camera sees this on bus (its own packet):
-  - Logs to SD card anyway (complete bus record)
+ESP32 forwards to phone via BLE telemetry
 ```
 
 ---
 
 ### Software Layers (3-Tier Abstraction)
 
-#### **Layer 0: Low-Level Operations (Firmware)**
-Built into Arduino/M5 Atom, exposed via UART protocol.
+#### **Layer 0: Firmware (Arduino C++ on ESP32 + Arduino)**
+Compiled via Arduino IDE, handles real-time operations.
 
-**Movement Primitives (Arduino executes):**
-```python
-bot.move_forward(duration_ms, speed_percent)
-bot.move_backward(duration_ms, speed_percent)
-bot.turn_left(duration_ms, speed_percent)
-bot.turn_right(duration_ms, speed_percent)
-bot.stop()
-bot.drive(left_speed, right_speed)  # -100 to +100
-```
+**ESP32 Firmware:**
+```cpp
+// Arduino C++ - runs on ESP32 main controller
+#include <BLEDevice.h>
+#include <MPU6886.h>
 
-**Sensor Reads (M5 Atom provides):**
-```python
-bot.sensors.imu()          # {gyro_xyz, accel_xyz, temp}
-bot.sensors.battery()      # {voltage, percent, time_left} from Arduino STATUS
-bot.sensors.distance()     # Ultrasonic/ToF (if equipped, via Custom)
-bot.sensors.light()        # Ambient light (if equipped, via Custom)
-bot.sensors.camera_frame() # 640x480 JPEG (from M5 Camera web UI)
-```
+BLECharacteristic* cmdCharacteristic;
+BLECharacteristic* telemetryCharacteristic;
 
-**State & Diagnostics:**
-```python
-bot.position.get()         # {x, y, theta} from M5 Atom dead reckoning
-bot.network.rssi()         # WiFi signal (from M5 Camera)
-bot.diagnostics.self_test() # Pre-match validation
-bot.get_logs(seconds=120)  # Last 120s (from M5 Camera SD card)
-```
-
----
-
-#### **Layer 1: Python Automation (MicroPython on M5 Atom)**
-User-defined in web interface Tab 2, uploaded as Custom (0x0F) command.
-
-**Example: Formation Behaviors**
-```python
-# Defined in web IDE Tab 2, sent from M5 Camera to M5 Atom
-def square_pattern():
-    for i in range(4):
-        send_to_bus(MOVE_FORWARD, duration=1000, speed=80)
-        time.sleep(1.0)
-        send_to_bus(TURN_RIGHT, duration=500, speed=60)
-        time.sleep(0.5)
-    send_to_bus(STOP)
-
-def follow_leader(leader_id):
-    while True:
-        leader_pos = mesh.get_position(leader_id)  # ESP-NOW, not UART
-        angle_to_leader = calculate_heading(position, leader_pos)
-
-        if abs(angle_to_leader) > 10:
-            cmd = TURN_LEFT if angle_to_leader > 0 else TURN_RIGHT
-            send_to_bus(cmd, duration=100, speed=50)
-        else:
-            send_to_bus(MOVE_FORWARD, duration=100, speed=70)
-        time.sleep(0.1)
-
-def collision_avoidance():
-    while True:
-        dist = read_distance_sensor()  # From Custom sensor module
-        if dist < 20:  # 20cm threshold
-            send_to_bus(STOP)
-            send_to_bus(TURN_RIGHT, duration=300, speed=80)
-        else:
-            send_to_bus(MOVE_FORWARD, duration=100, speed=60)
-        time.sleep(0.05)
-
-def send_to_bus(cmd, **params):
-    """Helper: Send command to shared UART bus"""
-    packet = serialize_command(cmd, params)
-    uart.write(packet)
-```
-
-**UI Result:** Buttons appear in Tab 2 - `[Square Pattern]` `[Follow Leader]` `[Avoid Obstacles]`
-
----
-
-#### **Layer 2: JavaScript Multi-Bot Orchestration (Browser)**
-Runs in browser (web interface Tab 3), sends HTTP to multiple M5 Camera modules.
-
-**Example: Swarm Formations**
-```javascript
-// Select bots 1-30 via checkboxes
-const selectedBots = ['192.168.4.1', '192.168.4.2', ..., '192.168.4.30'];
-
-async function snakeFormation() {
-    // Leader moves forward
-    await fetch(`http://${selectedBots[0]}/api/trigger`, {
-        method: 'POST',
-        body: JSON.stringify({command: 'move_forward', duration: 2000, speed: 80})
-    });
-
-    // Followers execute follow_leader behavior with 0.5s stagger
-    for (let i = 1; i < selectedBots.length; i++) {
-        await sleep(500);
-        await fetch(`http://${selectedBots[i]}/api/trigger`, {
-            method: 'POST',
-            body: JSON.stringify({
-                command: 'call_function',
-                function_name: 'follow_leader',
-                args: {leader_id: selectedBots[0]}
-            })
-        });
+void onCommandReceived(uint8_t* data, size_t len) {
+    uint8_t cmd = data[0];
+    switch(cmd) {
+        case CMD_MOVE_FORWARD:
+            uint16_t duration = (data[2] << 8) | data[3];
+            uint8_t speed = data[4];
+            sendToArduino(CMD_MOVE_FORWARD, duration, speed);
+            break;
+        case CMD_STOP:
+            sendToArduino(CMD_STOP);
+            break;
+        // ... other commands
     }
 }
 
-async function defensiveCircle(centerX, centerY, radius) {
-    const angleStep = (2 * Math.PI) / selectedBots.length;
+void sendTelemetry() {
+    // Called every 100ms
+    uint8_t packet[14];
+    packet[0] = batteryPercent;
+    // ... pack encoder, IMU data
+    telemetryCharacteristic->setValue(packet, 14);
+    telemetryCharacteristic->notify();
+}
+```
 
-    selectedBots.forEach((botIP, idx) => {
-        const angle = idx * angleStep;
-        const x = centerX + radius * Math.cos(angle);
-        const y = centerY + radius * Math.sin(angle);
+**Arduino Motor Controller:**
+```cpp
+// Arduino C++ - runs on Arduino Nano
+void executeMotorCommand(uint8_t cmd, uint16_t duration, uint8_t speed) {
+    int pwmValue = map(speed, 0, 100, 0, 255);
 
-        fetch(`http://${botIP}/api/trigger`, {
-            method: 'POST',
-            body: JSON.stringify({
-                command: 'call_function',
-                function_name: 'navigate_to',
-                args: {x, y}
-            })
-        });
-    });
+    switch(cmd) {
+        case CMD_MOVE_FORWARD:
+            analogWrite(MOTOR_L, pwmValue);
+            analogWrite(MOTOR_R, pwmValue);
+            delay(duration);
+            stopMotors();
+            break;
+        // ... other commands
+    }
 }
 ```
 
 ---
 
-### Web Interface (3-Tab Design)
+#### **Layer 1: Phone App (Python)**
+Runs on each bot's phone. Each phone controls only its own bot via BLE, but coordinates with teammates via WiFi mesh.
 
-Served by M5 Camera module, accessible at `http://192.168.4.1` (WiFi AP).
+**Bot Controller (Runs on Each Phone):**
+```python
+# Python - runs on each bot's mounted phone
+import asyncio
+from bleak import BleakClient
 
-**Tab 1: Manual Operation**
-- Live 640x480 POV camera feed (from M5 Camera OV2640)
-- Arrow buttons (↑↓←→) for manual driving
-- Real-time sensor readouts (battery, IMU, distance)
-- Status indicators (position, UART bus activity, errors)
-- All button presses → HTTP POST to `/api/trigger` → Custom (0x0F) to UART bus
+class BotController:
+    """Controls this bot's ESP32 via BLE"""
 
-**Tab 2: Python Code Editor**
-- Syntax-highlighted editor (CodeMirror or Monaco)
-- Shows current user functions stored on M5 Atom
-- Upload button → sends code via HTTP → Custom (0x0F type 0x01) to M5 Atom
-- Execute button → calls function via HTTP → Custom command
-- Console output shows results (M5 Atom sends debug via Custom type 0x06, Camera logs and displays)
-- Creates buttons for defined functions
+    def __init__(self, esp32_address):
+        self.client = BleakClient(esp32_address)
+        self.telemetry = {}
 
-**Tab 3: Swarm Orchestration**
-- Multi-select bot checkboxes (connects to multiple bot IPs)
-- Formation preset buttons
-- JavaScript code editor for custom orchestration
-- Top-down arena canvas (shows bot positions from mesh network data)
-- Execute swarm commands in parallel (multiple HTTP requests to different bots)
+    async def connect(self):
+        await self.client.connect()
+        await self.client.start_notify(TELEMETRY_UUID, self._on_telemetry)
+
+    async def move_forward(self, duration_ms, speed_percent):
+        cmd = bytes([0x01, 0x03,
+                     duration_ms >> 8, duration_ms & 0xFF,
+                     speed_percent])
+        await self.client.write_gatt_char(CMD_UUID, cmd)
+
+    async def stop(self):
+        await self.client.write_gatt_char(CMD_UUID, bytes([0x05]))
+
+    def _on_telemetry(self, sender, data):
+        self.telemetry = {
+            'battery': data[0],
+            'encoder_left': (data[1] << 8) | data[2],
+            'encoder_right': (data[3] << 8) | data[4],
+        }
+
+
+class TeamMesh:
+    """Coordinates with other bots via WiFi mesh"""
+
+    def __init__(self, team_id, bot_id):
+        self.team_id = team_id
+        self.bot_id = bot_id
+        self.teammates = {}  # {bot_id: {position, telemetry, ...}}
+
+    async def broadcast_position(self, position):
+        """Share my position with teammates"""
+        # WiFi mesh broadcast
+        pass
+
+    async def get_teammate_positions(self):
+        """Get current positions of all teammates"""
+        return self.teammates
+```
+
+**Behavior Script (Uploaded by Pilot):**
+```python
+# Python - written by pilot with LLM assistance
+# Uploaded to all 30 phones before match
+
+async def behavior_main(bot: BotController, mesh: TeamMesh):
+    """Main behavior loop - runs on each bot's phone"""
+
+    while match_running:
+        # Get my telemetry
+        my_pos = bot.telemetry.get('position')
+
+        # Get teammate positions via mesh
+        teammates = await mesh.get_teammate_positions()
+
+        # Execute swarm behavior
+        if should_move_to_goal(my_pos, teammates):
+            await bot.move_forward(500, 80)
+        elif should_spread_out(my_pos, teammates):
+            await move_away_from_nearest(bot, teammates)
+
+        # Broadcast my position to team
+        await mesh.broadcast_position(my_pos)
+
+        await asyncio.sleep(0.1)
+
+
+async def move_away_from_nearest(bot, teammates):
+    """Spread out from nearest teammate"""
+    nearest = find_nearest(bot.telemetry['position'], teammates)
+    angle = calculate_away_angle(bot.telemetry['position'], nearest)
+    await bot.turn_to(angle)
+    await bot.move_forward(200, 60)
+```
+
+---
+
+#### **Layer 2: Pilot's Development Environment**
+Runs on pilot's laptop/desktop before match.
+
+**Main Tools:**
+
+**1. Script Editor**
+- Syntax-highlighted Python editor
+- LLM assistant panel (ask Claude/ChatGPT for help)
+- Test single bot behavior locally
+- Console output for debugging
+
+**2. Simulator**
+- Test full 30-bot strategy virtually
+- Same physics as physical arena
+- Iterate before deploying to real bots
+
+**3. Fleet Manager**
+- Upload script to all 30 phones
+- Verify all bots connected and ready
+- Pre-match status dashboard
+
+**4. Match Recorder (Post-Match)**
+- Collect POV footage from all 60 phones
+- Aggregate telemetry logs
+- Upload to Knowledge Commons
+
+**5. Match Recorder**
+- Start/stop match recording
+- Captures: all commands, telemetry, timestamps
+- Exports to Knowledge Commons format
+- Optional screen recording
 
 ---
 
@@ -462,11 +533,11 @@ Served by M5 Camera module, accessible at `http://192.168.4.1` (WiFi AP).
 
 ### Architecture Overview
 
-The simulator uses an **autobattler format** with offline Blender rendering in a **lo-fi cyberpunk aesthetic**. Same MicroPython code runs in both environments. Key innovation: **ML Predictor** that takes last 5 keyframes and predicts next keyframe with % match to original training data. Lo-fi aesthetic (low-poly, CRT scan lines, visible grid) accelerates development with limited resources.
+The simulator uses an **autobattler format** with offline Blender rendering in a **lo-fi cyberpunk aesthetic**. **Same Python swarm code runs in both physical and virtual environments** - the phone app code works identically against virtual bots. Key innovation: **ML Predictor** that takes last 5 keyframes and predicts next keyframe with % match to original training data.
 
 **Autobattler Format:**
 - 90-second matches with no operator interference during match
-- Pilots prepare Python packages with LLM assistance
+- Pilots prepare Python packages with LLM assistance (same code as phone app)
 - Packages are signed and queued for batch processing
 - Strategy generation "on the go" is a future enhancement
 
@@ -476,13 +547,21 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
+│  │  Pilot's Python Script (Same as Phone App)                │  │
+│  │                                                           │  │
+│  │  - Identical swarm behavior code                         │  │
+│  │  - Connects to virtual bots via mock BLE interface       │  │
+│  │  - Receives simulated telemetry                          │  │
+│  └────────────────────────┬─────────────────────────────────┘  │
+│                           │ Mock BLE                            │
+│                           ▼                                     │
+│  ┌──────────────────────────────────────────────────────────┐  │
 │  │  60 Virtual Bots (Python Processes)                       │  │
 │  │                                                           │  │
 │  │  Each bot emulates:                                       │  │
-│  │  - M5 Camera (Flask web server, same 3-tab UI)           │  │
-│  │  - M5 Atom (vanilla MicroPython + init.py, same code)    │  │
-│  │  - Arduino (motor commands → game server)                │  │
-│  │  - Shared UART bus (virtual message queue)               │  │
+│  │  - BLE command interface (same protocol as physical)     │  │
+│  │  - ESP32 firmware behavior (command → motor translation) │  │
+│  │  - Arduino motor response (motor → position update)      │  │
 │  │  - Sensors (simulated with realistic noise)              │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
@@ -529,124 +608,145 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 
 ### Virtual Bot Implementation
 
-**Key Design Principle:** Exact API compatibility with physical bots, including UART bus simulation. Autobattler format with offline rendering.
+**Key Design Principle:** Exact BLE API compatibility with physical bots. The pilot's Python swarm code runs unchanged against virtual bots. Autobattler format with offline rendering.
 
 ```python
 # virtual_bot.py
-import queue
-
-# Shared virtual UART bus (all bots subscribe)
-virtual_uart_bus = queue.Queue()
+import asyncio
+import numpy as np
 
 class VirtualBot:
-    """Emulates M5 Camera + M5 Atom + Arduino stack + shared UART bus"""
+    """Emulates ESP32 + Arduino stack with BLE interface"""
 
-    def __init__(self, bot_id, game_server, uart_bus):
+    def __init__(self, bot_id, game_server):
         self.id = bot_id
-        self.game_server = game_server  # Game server (no physics engine)
-        self.uart_bus = uart_bus  # Shared message queue
+        self.address = f"virtual-bot-{bot_id:02d}"
+        self.game_server = game_server
 
         self.position = [0, 0, 0]  # x, y, theta
         self.velocity = [0, 0]
 
-        # Emulate M5 Atom user functions (Layer 1)
-        self.user_functions = {}
-
-        # Virtual SD card log
-        self.uart_log = []
-
-        # Start components
-        self.start_uart_listener()
-        self.start_web_server()
-
-    def start_uart_listener(self):
-        """Background thread: listen to shared UART bus (like physical bus)"""
-        def listen():
-            while True:
-                packet = self.uart_bus.get()  # Block until message
-
-                # M5 Camera behavior: log everything
-                self.uart_log.append(packet)
-
-                # M5 Atom behavior: parse Custom commands
-                if packet['cmd'] == 0x0F and packet['custom_type'] == 0x01:
-                    # Web UI command for me
-                    self.execute_command(packet['data'])
-
-                # Arduino behavior: parse motor commands
-                if packet['cmd'] in [0x01, 0x02, 0x03, 0x04, 0x05, 0x06]:
-                    self.execute_motor_command(packet)
-
-        threading.Thread(target=listen, daemon=True).start()
-
-    def send_to_bus(self, cmd, **params):
-        """Send packet to shared UART bus (all virtual bots hear it)"""
-        packet = {
-            'sender': self.id,
-            'cmd': cmd,
-            'params': params,
-            'timestamp': time.time()
+        # Telemetry (matches physical bot format)
+        self.telemetry = {
+            'battery': 100,
+            'encoder_left': 0,
+            'encoder_right': 0,
+            'accel': [0, 0, 9.8],
+            'gyro': [0, 0, 0],
         }
-        self.uart_bus.put(packet)
 
-    # Layer 0 API (same as physical M5 Atom init.py)
-    def move_forward(self, duration_ms, speed_percent):
-        # Send to UART bus (Arduino emulator will see it)
-        self.send_to_bus(0x01, duration=duration_ms, speed=speed_percent)
+        # Command log for replay
+        self.command_log = []
 
-        # Game server handles position prediction
-        self.game_server.predict_position(
+    # BLE-compatible interface (same as physical Bot class)
+    async def connect(self):
+        """Mock BLE connection"""
+        return True
+
+    async def disconnect(self):
+        """Mock BLE disconnection"""
+        pass
+
+    async def move_forward(self, duration_ms, speed_percent):
+        """Same API as physical bot"""
+        self.command_log.append({
+            'cmd': 'move_forward',
+            'duration': duration_ms,
+            'speed': speed_percent,
+            'timestamp': asyncio.get_event_loop().time()
+        })
+
+        # Game server predicts position change
+        self.game_server.queue_movement(
             bot_id=self.id,
             direction=self.position[2],
-            magnitude=speed_percent / 100.0,
+            speed=speed_percent / 100.0,
             duration=duration_ms / 1000.0
         )
 
-    def sensors_imu(self):
-        # Get values from game server, add realistic noise
-        predicted_accel = self.game_server.get_acceleration(self.id)
-        noise = np.random.normal(0, 0.01, 3)  # Match MPU6886 specs
+    async def move_backward(self, duration_ms, speed_percent):
+        self.command_log.append({
+            'cmd': 'move_backward',
+            'duration': duration_ms,
+            'speed': speed_percent,
+            'timestamp': asyncio.get_event_loop().time()
+        })
+        self.game_server.queue_movement(
+            bot_id=self.id,
+            direction=self.position[2] + np.pi,  # Reverse
+            speed=speed_percent / 100.0,
+            duration=duration_ms / 1000.0
+        )
+
+    async def turn_left(self, duration_ms, speed_percent):
+        self.command_log.append({
+            'cmd': 'turn_left',
+            'duration': duration_ms,
+            'speed': speed_percent,
+            'timestamp': asyncio.get_event_loop().time()
+        })
+        self.game_server.queue_rotation(
+            bot_id=self.id,
+            direction=1,  # Counter-clockwise
+            speed=speed_percent / 100.0,
+            duration=duration_ms / 1000.0
+        )
+
+    async def turn_right(self, duration_ms, speed_percent):
+        self.command_log.append({
+            'cmd': 'turn_right',
+            'duration': duration_ms,
+            'speed': speed_percent,
+            'timestamp': asyncio.get_event_loop().time()
+        })
+        self.game_server.queue_rotation(
+            bot_id=self.id,
+            direction=-1,  # Clockwise
+            speed=speed_percent / 100.0,
+            duration=duration_ms / 1000.0
+        )
+
+    async def stop(self):
+        self.command_log.append({
+            'cmd': 'stop',
+            'timestamp': asyncio.get_event_loop().time()
+        })
+        self.game_server.stop_bot(self.id)
+
+    def get_telemetry(self):
+        """Returns simulated telemetry with realistic noise"""
+        # Add noise matching physical sensor specs
+        noise_accel = np.random.normal(0, 0.01, 3)
+        noise_gyro = np.random.normal(0, 0.5, 3)
+
         return {
-            'accel': (predicted_accel + noise).tolist(),
-            'gyro': self.game_server.get_angular_velocity(self.id).tolist(),
-            'temp': 25.0 + np.random.normal(0, 0.5)
+            'battery': self.telemetry['battery'],
+            'encoder_left': self.telemetry['encoder_left'],
+            'encoder_right': self.telemetry['encoder_right'],
+            'accel': (np.array(self.telemetry['accel']) + noise_accel).tolist(),
+            'gyro': (np.array(self.telemetry['gyro']) + noise_gyro).tolist(),
+            'position': self.position,  # Bonus: simulator knows true position
         }
 
-    # Web server (emulates M5 Camera)
-    def start_web_server(self):
-        app = Flask(__name__)
 
-        @app.route('/api/trigger', methods=['POST'])
-        def trigger():
-            cmd = request.json
-            # M5 Camera behavior: send as Custom (0x0F) to UART bus
-            self.send_to_bus(0x0F, custom_type=0x01, data=cmd)
-            return {'status': 'ok'}
+# Mock BLE adapter for simulator
+class VirtualBLEAdapter:
+    """Allows phone app code to run against virtual bots"""
 
-        @app.route('/api/sensors/imu')
-        def get_imu():
-            return jsonify(self.sensors_imu())
+    def __init__(self, virtual_bots):
+        self.bots = {bot.address: bot for bot in virtual_bots}
 
-        @app.route('/api/camera')
-        def camera_feed():
-            # POV frames rendered offline by Blender after match
-            return Response(b'', mimetype='image/jpeg')
+    async def scan(self):
+        """Return list of virtual bot addresses"""
+        return list(self.bots.keys())
 
-        @app.route('/api/logs')
-        def get_logs():
-            # Return UART log (like reading SD card)
-            return jsonify(self.uart_log[-1200:])  # Last 120s @ 10Hz
+    def get_bot(self, address):
+        """Return VirtualBot instance (same interface as physical Bot)"""
+        return self.bots.get(address)
 
-        @app.route('/')
-        def index():
-            # Serve same 3-tab HTML as physical bot
-            return render_template('index.html')
 
-        # Run on unique port per bot
-        threading.Thread(
-            target=lambda: app.run(host='0.0.0.0', port=8000 + self.id, threaded=True),
-            daemon=True
-        ).start()
+# Usage: Pilot's swarm code runs unchanged
+# Just swap BLE adapter for VirtualBLEAdapter
 ```
 
 ---
@@ -877,22 +977,52 @@ More Competitors → More Physical Matches
 
 ## System Requirements
 
-### Physical Bot (Per Unit)
+### Starter Class Bot (20cm) - Per Unit
 
-**Hardware:**
-- Arduino Nano: €3-5
-- M5 Atom ESP32: €12-15
-- M5 Camera ESP32-S3: €15-20
-- Motors + driver: €8-10
-- Battery (7.4V 1000mAh): €8-12
-- Chassis (3D printed): €5-8
-- **Total: €50-70 per bot**
+**Hardware (~€50-100):**
+- ESP32 DevKit/M5 Atom: €8-15
+- Arduino Nano (motor controller): €3-5
+- 2x N20 gear motors + wheels: €8-12
+- L298N mini motor driver: €3-5
+- 7.4V 500mAh LiPo: €8-12
+- 3D printed chassis: €5-10
+- Optional: MPU6886 IMU: €5-8
+
+**Software (all Arduino IDE):**
+- ESP32 firmware (BLE server, sensor reading)
+- Arduino Nano firmware (motor control, encoders)
+
+### Maintenance Class Bot (60cm) - Per Unit
+
+**Hardware (~€200-400):**
+- ESP32 main controller: €10-15
+- Raspberry Pi (optional, for vision): €50-80
+- 4x brushless motors + ESCs: €60-100
+- Motor driver board: €20-30
+- 11.1V 5000mAh LiPo: €40-60
+- Aluminum/printed chassis: €30-50
+- Weatherproof enclosure: €20-40
+- Sensor package (lidar, camera): €50-100
+- Modular attachment mount: €20-30
 
 **Software:**
-- Arduino IDE (C++ compilation)
-- MicroPython (vanilla ESP32 port + your init.py for M5 Atom)
-- MicroPython (web server for M5 Camera)
-- Web UI (HTML/CSS/JS served from M5 Camera flash)
+- Same Arduino IDE firmware as Starter Class
+- Additional: Raspberry Pi vision processing (optional)
+
+### Bot Phones (60 per Match)
+
+**One phone mounted on each bot. 30 per team, 60 total.**
+
+**Hardware:**
+- Any modern smartphone (Android 10+ or iOS 14+)
+- BLE 5.0 support (standard on phones from 2019+)
+- Used phones work fine (~€50-100 each)
+
+**Software:**
+- Python app (Kivy, BeeWare, or similar framework)
+- BLE library (bleak for Python)
+- WiFi mesh for team coordination
+- POV camera recording
 
 ---
 
@@ -922,20 +1052,20 @@ More Competitors → More Physical Matches
 ## Integration Points
 
 ### Knowledge Commons
-- Physical bots upload UART logs (from M5 Camera SD cards)
-- Collision events extracted from logs
+- Phone apps upload match recordings (commands, telemetry, timestamps)
+- Collision events extracted from telemetry
 - ML models trained on collision dataset
 - Sim-to-real validation metrics published
 - Virtual matches contribute synthetic data (marked as simulated)
 
 ### Logistics Operations
-- Firmware deployment to rental fleets
-- SD card extraction for data upload (M5 Camera modules)
-- Quality control (validate UART logging works)
+- Firmware deployment to rental fleets (Arduino IDE OTA or USB)
+- Match data collection via phone app uploads
+- Quality control (validate BLE connectivity, sensor readings)
 - Bounty verification (test in simulator before physical demo)
 
 ### League Management
-- Virtual tournaments (online competitions)
+- Virtual tournaments (online competitions using simulator)
 - Practice matches (off-season engagement)
 - Qualifying rounds (screen for physical events)
 - Education programs (simulator for schools without hardware)
@@ -945,30 +1075,36 @@ More Competitors → More Physical Matches
 ## Development Roadmap
 
 ### Phase 1: Physical Bot Firmware (Months 1-3)
-- UART protocol specification (16 commands)
-- Arduino motor controller (listens for 0x01-0x0E)
-- M5 Atom init.py (vanilla MicroPython + custom logic, listens for Custom 0x0F)
-- M5 Camera web server (sends Custom 0x0F, logs all traffic)
-- Integration testing on shared UART bus
+- BLE protocol specification (command/telemetry format)
+- ESP32 BLE server firmware (Arduino C++)
+- Arduino motor controller firmware (Arduino C++)
+- Integration testing (phone → ESP32 → Arduino)
 
-### Phase 2: Virtual Simulator Core (Months 4-6)
+### Phase 2: Phone App Core (Months 2-4)
+- Python app framework setup (Kivy or similar)
+- BLE connection manager (multi-bot support)
+- Basic manual control UI (joystick, telemetry display)
+- Script editor with syntax highlighting
+- LLM integration for script assistance
+
+### Phase 3: Virtual Simulator Core (Months 4-6)
 - Python game server (250ms updates, no physics engine)
 - Cluster detection + position prediction
-- Virtual UART bus (shared message queue)
-- MicroPython API emulator (runs same init.py)
-- Flask web servers (60 instances, same UI as physical)
+- Virtual BLE adapter (same API as physical)
+- Run phone app code against virtual bots
+- Blender rendering pipeline
 
-### Phase 3: ML Predictor + Blender Integration (Months 7-9)
-- Extract keyframe sequences from Knowledge Commons UART logs
+### Phase 4: ML Predictor + Integration (Months 7-9)
+- Extract keyframe sequences from Knowledge Commons telemetry
 - Build ML predictor (5 keyframes → next + % match to original data)
-- Blender rendering pipeline + lo-fi cyberpunk aesthetic
+- Lo-fi cyberpunk aesthetic in Blender
 - Validate sim-to-real accuracy
 
-### Phase 4: Production Ready (Months 10-12)
+### Phase 5: Production Ready (Months 10-12)
 - Autobattler format: package upload, signing, queue system
 - Batch processing infrastructure
 - Tournament management system
-- Full documentation
+- Knowledge Commons data upload from phone app
 - Deploy to Mac Mini M4
 
 ---
@@ -993,7 +1129,7 @@ More Competitors → More Physical Matches
 
 This architecture creates a **complete ecosystem** where physical and virtual robotics competitions reinforce each other:
 
-1. **Physical matches** generate high-quality real-world data (UART logs)
+1. **Physical matches** generate high-quality real-world data (phone app recordings)
 2. **ML Predictor** learns from this data (5 keyframes → next + % match)
 3. **Virtual simulator** makes competition globally accessible (autobattler format)
 4. **Sim-to-real validation** proves dataset quality
@@ -1001,13 +1137,20 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 6. **More competitors** generate more data
 7. **Loop repeats**, improving both physical and virtual systems
 
-**Key Simplification:**
-- M5 Camera: Web server + UART logger (dumb terminal)
-- M5 Atom: Vanilla MicroPython + init.py (all logic)
-- Arduino: Motor controller (precise timing)
-- **Shared UART bus**: All modules listen, selective ignore based on command type
+**Key Architecture Decision:**
+- **Phone App (Python)**: All swarm logic, UI, LLM integration, recording
+- **ESP32 (Arduino C++)**: BLE communication, sensor fusion, command relay
+- **Arduino (Arduino C++)**: Motor control, precise timing, safety
+- **Same Python code** runs against physical bots (via BLE) and virtual bots (via mock adapter)
 
-**Key Innovation:** ML Predictor built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world keyframe sequences extracted from complete UART bus logs. Same inputs always produce same outputs, with full transparency on which training data was used.
+**Why Arduino IDE (not MicroPython):**
+- Faster execution with deterministic timing
+- Better library ecosystem (BLE, IMU, motors)
+- LLMs generate better Arduino C++ than MicroPython
+- Easier debugging with Serial Monitor
+- More examples and community support
+
+**Key Innovation:** ML Predictor built from real matches creates a unique moat—no other robotics competition can claim their simulator is validated against thousands of real-world keyframe sequences. Same inputs always produce same outputs, with full transparency on which training data was used.
 
 **Autobattler Format Benefits:**
 - 90-second matches with no operator interference
