@@ -116,9 +116,9 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 **The training data goldmine.** Thousands of hours of 60-bot multi-agent behavior under adversarial conditions, with complete hardware/software documentation.
 
 **`/match-replays/`** - Full Sensor Logs (Licensed)
-- **UART logs** from M5 Camera SD cards (complete bot communication record)
+- **Serial logs** from Android phone storage (complete bot communication record)
 - 60× robot position/velocity trajectories reconstructed from logs
-- 60× camera feeds (saved separately, referenced in metadata)
+- 60× camera feeds (from phone cameras, saved separately, referenced in metadata)
 - Network traffic captures (pcap format, includes hacker attacks)
 - Pilot input logs (button presses vs. AI prompts, timestamps)
 - Match outcomes (scores, formations used, winner)

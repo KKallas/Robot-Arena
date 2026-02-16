@@ -777,7 +777,7 @@ class MLPredictor:
     def build_from_matches(self, match_logs_path):
         """
         Load from /01-knowledge-commons/ml-datasets/match-replays/
-        Parse UART logs from M5 Camera SD cards
+        Parse serial logs from Android phone storage
         """
         for log_file in glob(f'{match_logs_path}/*.log'):
             match_id = extract_match_id(log_file)
@@ -928,7 +928,7 @@ battle-2026-01-07-001/
 **Blender reads complete timeline after match, renders offline.**
 
 **Camera Outputs:**
-- 60 POV cameras (one per bot, 640x480 @ 30fps, matches physical OV2640)
+- 60 POV cameras (one per bot, 640x480 @ 30fps, matches physical phone cameras)
 - 1 overhead camera (top-down arena view, 1920x1080 @ 60fps)
 - H.264/H.265 encoding via Blender's built-in encoder
 - Exported as MP4/WebM video files
@@ -950,7 +950,7 @@ battle-2026-01-07-001/
 
 Physical Matches (Real Arena)
     ↓
-UART Logs (M5 Camera SD cards) + Camera Feeds
+Serial Logs (Android Phone storage) + Camera Feeds
     ↓
 Knowledge Commons Upload
     ↓
@@ -1159,3 +1159,11 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 - Scalability for limited compute resources
 
 The **Mac Mini M4** is ideal for the simulator: unified memory handles 60 bots + Blender rendering efficiently, while batch processing allows sequential match rendering without realtime constraints.
+
+**Why Android Phone + ESP32 Bridge:**
+- Used phones (~€50) are more powerful than ESP32-based camera modules
+- Phone runs full Python (not MicroPython), enabling richer logic
+- USB-OTG serial provides reliable high-speed communication
+- ESP32 bridge handles I2C translation + analog/digital I/O
+- Scalable: add more ESP32 bridges for more ports/modules
+- Phone's built-in camera, WiFi, storage replace dedicated camera module functionality

@@ -202,10 +202,10 @@ A robot that unsticks autonomous lawn mowers when they get stuck:
 
 **Maintenance Schedule:**
 - **After every event:**
-  - Visual inspection, charge all batteries
-  - Verify UART logs uploaded to Knowledge Commons (automatic via WiFi)
-  - Firmware update check (Arduino, M5 Atom, M5 Camera)
-  - Clear SD card space on M5 Camera modules (logs auto-upload, then purge)
+  - Visual inspection, charge all batteries (bots + phones)
+  - Verify serial logs uploaded to Knowledge Commons (automatic via WiFi from phones)
+  - Firmware update check (Arduino, ESP32 bridge, M5 Atom)
+  - Clear phone storage (logs auto-upload, then purge)
 - **Monthly:** Deep clean, motor bearing check, sensor calibration
 - **Quarterly:** Replace worn components (wheels, sensors), battery health test
 - **Annually:** Full refurbishment, integrate successful custom mods from pilots

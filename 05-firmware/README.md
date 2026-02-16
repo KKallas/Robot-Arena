@@ -180,7 +180,7 @@ Commands:
 **Rental Fleet:**
 - All bots run identical ESP32/Arduino firmware
 - Version tracked in Logistics Operations inventory
-- Updates deployed between events
+- Updates deployed between events (firmware via OTA, phone apps via WiFi)
 
 **Pilot Customization:**
 - Pilots write behavior scripts (Python)
