@@ -6,7 +6,7 @@ Each bot has a phone on it — that's 60 cameras filming every match. 90-second 
 
 **Built for ages 15-19** — the gap between ROS (too complex, academic) and bare-metal C/Python (too low-level, no structure). Robot Arena gives young engineers a real competition framework with Python scripts, AI copilots, and physical robots, without needing a university robotics lab.
 
-**You don't start from zero.** Fork someone's strategy from the Knowledge Commons. Retrofit an old Roomba with a €50 phone + ESP32 kit. Use last season's winning script as your starting point. New isn't always better — Robot Arena makes the complicated things systematic and easier to manage. The whole stack is open-source: hardware designs, firmware, strategies, and match data.
+**You don't start from zero.** Fork someone's strategy from the Knowledge Commons. Retrofit an old Roomba with a €50 phone + ESP32 kit. Use last season's winning script as your starting point. Or just rent everything — bots, arena, the whole setup. Built something good? Sell your bots back to the rental pool, where they get rented and resold to the next wave of competitors. New isn't always better — Robot Arena makes the complicated things systematic and easier to manage. The whole stack is open-source: hardware designs, firmware, strategies, and match data.
 
 **The actual product is match data.** Every match captures the full AI-assisted development process: the prompts, iterations, debugging sessions, and the swarm behavior that resulted. This is the same format as chess game notation (PGN) — but for physical robotics with adversarial WiFi hacking. AI companies license this data to train the next generation of physical-world automation systems.
 
@@ -180,9 +180,9 @@ This data — especially the human-AI collaboration during script preparation an
 
 1. **Match datasets** — licensed to AI/robotics companies (preparation logs + match logs + per-node logs). Academic: free. Commercial: €50k-500k/year.
 2. **Content** — 60 camera angles per match from bot phones + overview cam. Sponsors pay for content library access (€50k-200k/year).
-3. **Hardware rental** — €2k/weekend competition packages, €500/semester school packages, €1.4k/day corporate events.
+3. **Hardware rental & resale** — rent bots, arenas, and all materials (€2k/weekend competition packages, €500/semester school packages, €1.4k/day corporate events). Sell your own bots into the rental pool — they get rented and resold to new users. Two-way marketplace.
 
-**Entry is low-friction:** show up, rent bots for €50-100, compete same day. Or 3D print your own fleet — all hardware is open-source. This scales.
+**Entry is low-friction:** show up, rent bots for €50-100, compete same day. Build your own fleet and sell it back when you're done. Or 3D print from open-source designs. This scales.
 
 **Revenue details:** See [BUSINESS-ECONOMICS.md](BUSINESS-ECONOMICS.md)
 
