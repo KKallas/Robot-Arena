@@ -12,6 +12,26 @@ Each bot has a phone on it — that's 60 cameras filming every match. 90-second 
 
 ---
 
+## Why This Exists
+
+DJI drones didn't win because of better motors or sensors — those components are available to everyone. They won because tens of thousands of iterations gave them a data advantage nobody else has. When DJI got restricted in the US, it exposed the real problem: Europe and the West have no equivalent iteration pipeline for affordable robotics.
+
+**Catching up requires more samples, faster.** To close the gap, we need to generate and validate millions of real-world interactions. That means we need a product people actually want to build, compete with, and collect data from at massive scale. That's the Arena — the competition creates demand for cheap robots, and cheap robots generate data.
+
+**The sim-to-real problem is the same everywhere.** When you run a heat or static loading simulation in Fusion 360, you don't trust it blindly. You build a simplified physical model, measure it, tune the simulator inputs until the results match reality, then swap in the final design and simulate. Mecha Arena does the same thing for robotics: if you know your current position, motion vector, and spin, an ML model should predict your next frame — accounting for collisions and boundaries. Run the exact same program in simulation and reality, compare the outputs, and fine-tune until they converge.
+
+**Why ML instead of a physics engine?** The predictor doesn't simulate physics — it finds the closest matching paths from real recorded matches. Given your current state (position, motion vector, spin), the model returns the top 10-20 closest real-world trajectories and their percentage match. Your predicted next frame is a weighted blend of paths that actually happened. More recorded matches = better predictions. This is why the competition feeds the simulator — every match makes the model more accurate.
+
+**Public benchmarking is built in.** Since we run the same program in both simulation and reality, and we can run both unlimited times, the arena itself is the benchmarking infrastructure. Every match publicly validates how good the model is — in front of an audience. The gap between predicted and actual outcomes is measurable, visible, and continuously shrinking as the dataset grows.
+
+**This gives us validated simulation.** And validated simulation is what lets you start building actually useful robots — not bleeding-edge research platforms, but affordable machines for work that doesn't justify a human salary yet costs more when left undone. Infrastructure maintenance: bridges, pipes, rails, roads. Nobody has made general-purpose robots cheaper than humans yet. That's not the horse to bet on today. But narrow-task robots, validated against real-world data, running on repurposed hardware? That's achievable.
+
+**Where this leads: embodied cognition.** A path-matching model is small and fast — no heavy physics simulation, just lookup and interpolation. That's the kind of model you can run on ultra-small hardware with an LLM for decision-making. Cheap, specific robots that understand their physical environment because they've seen thousands of real-world examples of it. The arena builds the dataset, the dataset builds the model, the model fits on the robot — and that robot goes out and does infrastructure maintenance.
+
+**Green thinking only works when greed supports it.** Henry Ford didn't double his workers' wages out of generosity — he did it because trained workers kept leaving, training replacements was expensive, and every worker who left took their skills to a competitor. Paying more was the cheaper option. Same logic here: repurposing old phones as robot brains and retrofitting Roombas instead of buying new isn't idealism — it's the only way to get input costs low enough to compete. The reuse is a side effect of the economics, not the goal. If we can keep some public infrastructure maintained longer and extend its life along the way, we've done something worthwhile.
+
+---
+
 ## The Sport
 
 **Two game modes:**
@@ -188,6 +208,21 @@ This data — especially the human-AI collaboration during script preparation an
 **Entry is low-friction:** show up, rent bots for €50-100, compete same day. Build your own fleet and sell it back when you're done. Or 3D print from open-source designs. This scales.
 
 **Revenue details:** See [BUSINESS-ECONOMICS.md](BUSINESS-ECONOMICS.md)
+
+---
+
+## Education
+
+Schools and labs don't need to buy anything — rent the equipment for an event, run the competition, return it.
+
+**Course materials are free.** Online courses covering how to build and modify the robots, write swarm scripts, and use LLMs as engineering copilots. Built from real classroom experience teaching 3D printing, signal analysis, and smart devices at Narva College Robotics (where students built accessories for Dobot MG400 industrial robots). Building arena bots is easier than that — cheaper hardware, simpler mechanics, more forgiving tolerances.
+
+**Paid options for those who want them:**
+- 1-on-1 mentoring sessions
+- Live online classroom experience with instructor
+- Teacher training courses (train-the-trainer, so schools can run events independently)
+
+The goal: any teacher can pick up the free materials and run a competition. If they want hands-on support, it's available. If not, everything they need is in the course and the open-source repo.
 
 ---
 
