@@ -48,7 +48,7 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 **`/pilot-modifications/`** - Community Improvements
 - Motor upgrades and alternative drive systems
 - Sensor additions (IR, ultrasonic, IMU, lidar)
-- Power optimization (different motor driver options, encoders)
+- Power optimization (better voltage regulation, efficiency)
 - Structural improvements (rigidity, crash resistance)
 - **All modifications documented:** CAD files, BOM diffs, performance impact, creator credited
 
@@ -66,7 +66,7 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 ### `/firmware/`
 
 **`/official-arduino/`** - Base Firmware (Arduino IDE)
-- Serial OTG connection and protocol
+- BLE command protocol specification (how bots receive commands from phone)
 - ESP32 BLE server firmware
 - Arduino motor controller firmware
 

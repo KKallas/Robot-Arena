@@ -9,12 +9,14 @@
 
 Robot Arena is an autobattler robotics sport with three main pillars (Knowledge Commons, Logistics Operations, League Management) supported by two technical foundations: **Physical Bot Firmware** and **Virtual Arena Simulator**. This document describes the complete technical architecture from hardware to ML models.
 
-**Key Architecture Decision:** Each bot has a phone mounted on it running Python logic. One phone per bot, 30 phones per team, 60 phones on the field. The ESP32/RISC-V microcontrollers run pure Arduino C++ firmware—no MicroPython. This provides the best balance of:
-- **Compute power:** Each bot has a full smartphone for AI/logic (no shared bottleneck)
-- **Camera:** Each phone provides POV recording for the dataset
-- **Speed:** Arduino C++ gives deterministic real-time motor control
-- **Libraries:** Arduino ecosystem has extensive sensor/motor support
-- **LLM capacity:** LLMs are better at generating Arduino C++ than MicroPython
+**Key Architecture Decision:** Each bot node is a **phone + ESP32 connected via UART** (USB-OTG serial). The phone is the brain — runs Python, has camera, WiFi. The ESP32 is the hardware bridge — connects to motors, sensors, and IR LED via I2C/SPI/GPIO. One phone per bot, 30 per team, 60 on field.
+
+A **team main controller** (laptop or separate phone) runs the pilot's swarm script and communicates with all 30 node phones over WiFi. An **overview camera** above the arena tracks IR LEDs on every bot and feeds position data to the team controller.
+
+- **Phone per node:** Full compute for local logic, POV camera, WiFi to team controller
+- **ESP32 per node:** UART bridge from phone to low-level hardware (I2C sensors, SPI, GPIO motors, IR LED)
+- **Team controller:** Runs centralized swarm strategy, receives overview cam feed + node telemetry
+- **WiFi is hackable:** Nodes that process locally don't depend on controller connectivity
 
 ---
 
@@ -44,7 +46,7 @@ Robot Arena is an autobattler robotics sport with three main pillars (Knowledge 
 │         │ - Phone App (Python)│   │ - Python Emulator  │       │
 │         │ - Arduino Firmware  │   │ - Game Server      │       │
 │         │ - Phone Camera      │   │ - Collision LUT    │       │
-│         │ - BLE/WiFi Protocol │   │ - Blender Render   │       │
+│         │ - UART/WiFi Protocol│   │ - Blender Render   │       │
 │         └─────────────────────┘   └────────────────────┘       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -65,41 +67,33 @@ Robot Arena has two official robot classes. See [BOT-SPECIFICATIONS.md](BOT-SPEC
 
 Both classes share the same software architecture (phone app + Arduino firmware).
 
-### Hardware Stack - Phone + Arduino Firmware
+### Hardware Stack - Phone + ESP32 Bridge
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│          Single Bot (1 of 30 per team, 60 total on field)       │
+│          Single Bot Node (1 of 30 per team, 60 total on field)  │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │           Phone (Mounted on Bot - Python App)             │  │
 │  │                                                           │  │
-│  │  - Bot's brain: runs behavior script (Python)            │  │
+│  │  - Bot's brain: runs local behavior logic (Python)       │  │
 │  │  - POV camera: records match footage for dataset         │  │
-│  │  - WiFi mesh: coordinates with other bots on team        │  │
-│  │  - BLE: commands to ESP32 below                          │  │
+│  │  - WiFi: receives commands from team controller          │  │
+│  │  - WiFi: reports telemetry back to team controller       │  │
+│  │  - UART to ESP32 via USB-OTG serial                      │  │
 │  └──────────────────────────┬───────────────────────────────┘  │
-│                              │ BLE                              │
+│                              │ UART (USB-OTG serial)            │
 │                              ▼                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │              ESP32 Main Controller (Arduino C++)          │  │
+│  │           ESP32 Hardware Bridge (Arduino C++)             │  │
 │  │                                                           │  │
-│  │  - Receives commands from phone via BLE                  │  │
-│  │  - Executes motor commands with precise timing           │  │
-│  │  - Reads sensors (IMU, encoders, battery)                │  │
-│  │  - Streams telemetry back to phone                       │  │
-│  │  - UART to motor driver                                  │  │
-│  └──────────────────────────┬───────────────────────────────┘  │
-│                              │ UART                             │
-│                              ▼                                  │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │        Arduino Nano/Motor Driver (Arduino C++)            │  │
-│  │                                                           │  │
-│  │  - PWM motor control (precise timing)                    │  │
-│  │  - Wheel encoder reading                                 │  │
-│  │  - Battery monitoring                                    │  │
-│  │  - Emergency stop handling                               │  │
+│  │  - Receives commands from phone via UART                 │  │
+│  │  - I2C: IMU, magnetometer, other sensors                 │  │
+│  │  - SPI: high-speed peripherals                           │  │
+│  │  - GPIO: motor PWM, encoder interrupts, IR LED           │  │
+│  │  - ADC: battery voltage monitoring                       │  │
+│  │  - Streams sensor telemetry back to phone via UART       │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  Starter (20cm): 7.4V 500mAh LiPo, ~200g, €50-100              │
@@ -107,196 +101,151 @@ Both classes share the same software architecture (phone app + Arduino firmware)
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Insight:** Each bot has its own phone mounted on it. The phone is the bot's brain—it runs the behavior script and records POV footage. The ESP32/Arduino runs pure C++ firmware compiled in Arduino IDE. This separation provides:
-- **Phone (per bot):** Runs behavior script, POV camera, WiFi mesh coordination
-- **ESP32:** Handles real-time communication, sensor fusion
-- **Arduino:** Handles precise motor timing, safety
+**Two layers per node:**
+- **Phone:** Bot brain + camera + WiFi link to team controller. Runs local Python logic. The more logic here, the more resilient to WiFi hacking.
+- **ESP32:** Hardware bridge via UART (USB-OTG serial). Translates phone commands to low-level I2C/SPI/GPIO. Reads sensors, drives motors, controls IR LED.
 
 **Communication Flow:**
 ```
 Before Match (Preparation):
-  - Pilot writes behavior script with LLM assistance
-  - Script is uploaded to all 30 phones on team's bots
-  - Autobattler format: no changes once match starts
+  - Pilot writes swarm script with LLM assistance
+  - Script loaded onto team main controller
+  - Optional: local fallback behaviors loaded onto node phones
 
-During Match (Per Bot):
-  Phone (mounted on bot):
-    - Executes uploaded behavior script (Python)
-    - Records POV camera footage
-    - Coordinates with teammates via WiFi mesh
-    - Sends motor commands to ESP32 via BLE
+During Match:
+  Team Controller (laptop/phone):
+    - Runs main Python script (programmatic or LLM-based)
+    - Receives overview cam feed (IR LED positions)
+    - Sends commands to 30 node phones via WiFi (hackable)
 
-  Phone → ESP32 (BLE):
-    - High-level commands: move_forward(duration, speed)
+  Node Phone (mounted on bot):
+    - Receives commands from team controller via WiFi
+    - Can run local logic independently if WiFi is lost
+    - Sends motor/LED commands to ESP32 via UART
+    - Reports sensor data back to team controller via WiFi
+
+  Phone → ESP32 (UART, USB-OTG serial):
+    - Motor commands: move_forward(duration, speed)
+    - LED control: set_ir_led(on/off)
     - Sensor requests: get_imu(), get_battery()
 
-  ESP32 → Arduino (UART):
-    - Motor commands: [0x01][duration][speed][CRC]
-    - Status queries: [0x08][CRC]
-
-  ESP32 → Phone:
-    - Telemetry stream: position, velocity, battery
-    - Sensor data: IMU readings, encoder counts
+  ESP32 → Phone (UART):
+    - Sensor telemetry: IMU, encoders, battery
+    - Status: motor state, IR LED state
 ```
 
 ---
 
 ### Module Responsibilities
 
-#### **Phone (Mounted on Each Bot)**
-**Role:** Bot Brain + POV Camera + Mesh Coordination
+#### **Team Main Controller (Laptop or Phone)**
+**Role:** Swarm Coordinator
+
+**One per team. Runs the pilot's main Python script.**
+
+**Inputs:**
+- Overview camera feed — sees IR LEDs on all bots, provides god-view positions
+- Node telemetry — each node phone reports sensor data back over WiFi
+
+**Outputs:**
+- Commands to 30 node phones over WiFi (formation updates, target assignments, mode switches)
+
+**Script types:**
+- Programmatic: if/else logic, state machines, formation algorithms
+- LLM-based: software triggers for different conditions, LLM generates responses
+
+**Vulnerability:** WiFi link to nodes is hackable. If disrupted, nodes must fall back to local logic.
+
+---
+
+#### **Node Phone (Mounted on Each Bot)**
+**Role:** Bot Brain + POV Camera + WiFi Link
 
 **One phone per bot. 30 phones per team. 60 phones on the field.**
 
 **Hardware:**
 - Any modern smartphone (Android 10+ or iOS 14+)
-- BLE 5.0 for ESP32 communication
+- USB-OTG for UART serial to ESP32
 - Built-in camera for POV recording
-- WiFi for mesh coordination with teammates
+- WiFi for communication with team controller
 
 **Software:**
 - Python app (via Kivy, BeeWare, or similar)
-- Behavior script (uploaded before match)
-- WiFi mesh protocol for team coordination
+- WiFi client: receives commands from team controller, sends telemetry back
+- UART serial: sends motor/LED commands to ESP32, receives sensor data
+- Local fallback behaviors (run when WiFi connection to controller is lost)
+- POV camera recording
 - Telemetry logging
-- POV match recording
-
-**Responsibilities:**
-- Execute behavior script autonomously during match
-- Record POV camera footage (60 camera angles per match!)
-- Coordinate with teammates via WiFi mesh
-- Send motor commands to ESP32 via BLE
-- Log all telemetry for Knowledge Commons
 
 **Why Phone Per Bot:**
-- Massive compute power per bot (no shared bottleneck)
+- Real compute power for local logic (resilient to WiFi hacking)
 - 60 POV cameras generate rich dataset
-- Cheap smartphones (~€50-100 used) add minimal cost
+- Cheap used smartphones (~€50-100) add minimal cost
 - Python is easier than embedded code
-- No firmware flashing—just upload new script
+- No firmware flashing — just upload new script
 
 ---
 
-#### **ESP32 Main Controller (Arduino C++)**
-**Role:** Communication Bridge + Sensor Hub
+#### **ESP32 Hardware Bridge (Arduino C++)**
+**Role:** Interface from phone to low-level hardware
 
 **Hardware:**
 - ESP32 (any variant: DevKit, M5 Atom, etc.)
-- MPU6886 or similar IMU (optional)
-- RGB LED (status indicator)
-- BLE for phone communication
-- UART for motor driver communication
+- UART connection to phone (USB-OTG serial)
+- I2C bus: IMU (MPU6886 or similar), magnetometer, other sensors
+- SPI bus: high-speed peripherals as needed
+- GPIO: motor PWM outputs, wheel encoder interrupt inputs, IR LED control
+- ADC: battery voltage monitoring
 
 **Software:**
 - Arduino C++ (compiled via Arduino IDE)
-- BLE server (receives commands from phone)
-- UART master (sends commands to motor driver)
-- Sensor reader (IMU, battery via ADC)
-- Telemetry streamer (sends data back to phone)
-
-**Responsibilities:**
-- Receive high-level commands from phone via BLE
-- Translate to motor commands and send to Arduino via UART
-- Read sensors and stream telemetry to phone at 10Hz
-- Handle emergency stop (button or phone disconnect)
-- Buffer commands for smooth execution
-
-**Why Arduino IDE (not MicroPython):**
-- Faster execution (C++ vs interpreted Python)
-- Better real-time timing guarantees
-- Extensive library ecosystem (BLE, IMU, motor)
-- LLMs are better at Arduino C++ than MicroPython
-- Easier debugging with Serial Monitor
-
----
-
-#### **Arduino Nano/Motor Driver (Arduino C++)**
-**Role:** Motor Controller
-
-**Hardware:**
-- ATmega328P @ 16MHz (or ESP32 if more IO needed)
-- 2x PWM outputs (motor control)
-- 2x interrupt pins (encoder inputs)
-- UART RX from ESP32
-- Analog input (battery voltage)
-
-**Software:**
-- Arduino C++ (compiled firmware)
-- UART command parser
+- UART command parser (receives from phone)
+- I2C/SPI sensor readers
 - Motor PWM driver (precise timing)
-- Wheel encoder reader (speed feedback)
-- Battery monitor (voltage + state of charge)
-- Emergency stop handler
+- Wheel encoder reader (odometry via interrupts)
+- IR LED controller
+- Battery monitor (ADC voltage + state of charge)
+- Telemetry streamer (sends sensor data back to phone via UART at 10Hz)
+- Emergency stop handler (cuts motors on UART signal loss)
 
-**Responsibilities:**
-- Receive motor commands from ESP32 via UART
-- Execute motor commands with precise timing
-- Read wheel encoders (odometry)
-- Monitor battery state
-- Send status updates at 10Hz
-- Hardware emergency stop (cuts motors on signal loss)
+**Why ESP32 as bridge (not running logic directly):**
+- Phone has orders of magnitude more compute for Python logic
+- ESP32 excels at real-time I/O: precise PWM timing, interrupt handling, ADC sampling
+- Clean separation: phone decides what to do, ESP32 interfaces with hardware
+- Arduino C++ is better for deterministic I/O timing than Python
 
 ---
 
 ### Communication Protocols
 
-#### **Phone ↔ ESP32 (BLE)**
+#### **Team Controller ↔ Node Phones (WiFi)**
 
-**BLE Service UUID:** `0000FFE0-0000-1000-8000-00805F9B34FB`
+Standard WiFi (TCP/UDP). This is the hackable link.
 
-**Characteristics:**
-```
-Command TX (Phone → ESP32):  0xFFE1  Write
-Telemetry RX (ESP32 → Phone): 0xFFE2  Notify
-Status (bidirectional):       0xFFE3  Read/Write
-```
-
-**Command Format (Phone → ESP32):**
-```
-┌──────┬────────┬──────────────┐
-│ Cmd  │ Length │   Payload    │
-│ 1B   │ 1B     │   0-18B      │
-└──────┴────────┴──────────────┘
-
-BLE MTU limits payload to ~20 bytes per packet.
-Larger commands split across multiple packets.
+**Controller → Node:** JSON commands over TCP
+```json
+{"cmd": "move_forward", "speed": 80, "duration_ms": 2000}
+{"cmd": "set_formation", "role": "flank_left", "target": [1.5, 2.0]}
+{"cmd": "set_mode", "mode": "fallback_local"}
 ```
 
-**Command Types:**
-```
-0x01  MOVE_FORWARD     - duration_ms (2B), speed (1B)
-0x02  MOVE_BACKWARD    - duration_ms (2B), speed (1B)
-0x03  TURN_LEFT        - duration_ms (2B), speed (1B)
-0x04  TURN_RIGHT       - duration_ms (2B), speed (1B)
-0x05  STOP             - (no payload)
-0x06  DRIVE            - left_speed (1B), right_speed (1B)
-0x07  GET_SENSORS      - (triggers telemetry response)
-0x08  SET_LED          - r (1B), g (1B), b (1B)
-0x09  EMERGENCY_STOP   - (no payload)
-0x0A  PING             - (no payload, expects PONG)
+**Node → Controller:** JSON telemetry over UDP
+```json
+{"node_id": 5, "battery": 92, "enc_l": 45, "enc_r": 42, "ir_led": true}
 ```
 
-**Telemetry Format (ESP32 → Phone):**
-```
-┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
-│ Bat% │ EncL │ EncR │ AccX │ AccY │ AccZ │ GyrZ │ Flags│
-│ 1B   │ 2B   │ 2B   │ 2B   │ 2B   │ 2B   │ 2B   │ 1B   │
-└──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
-
-Sent at 10Hz (100ms intervals)
-Total: 14 bytes per packet
-```
+**Overview Cam → Controller:** IR LED position data (wired/dedicated link, not hackable)
 
 ---
 
-#### **ESP32 ↔ Arduino (UART)**
+#### **Phone ↔ ESP32 (UART via USB-OTG Serial)**
 
 **Configuration:**
-- Baud rate: 115200 (simple, reliable)
-- 8N1 (8 data bits, no parity, 1 stop bit)
-- Point-to-point (not bus)
+- USB-OTG serial (phone acts as USB host)
+- Baud rate: 115200, 8N1
+- Point-to-point (phone ↔ one ESP32)
 
-**Packet Format:**
+**Packet Format (both directions):**
 ```
 ┌──────┬──────┬────────┬──────────────┬─────────┐
 │ STX  │ Cmd  │ Length │   Payload    │  CRC8   │
@@ -307,7 +256,7 @@ STX: 0x02 (start of text)
 CRC8: XOR of all bytes (simple, fast)
 ```
 
-**Motor Commands (ESP32 → Arduino):**
+**Commands (Phone → ESP32):**
 ```
 0x01  MOVE_FORWARD     - duration_ms (2B), speed (1B)
 0x02  MOVE_BACKWARD    - duration_ms (2B), speed (1B)
@@ -315,217 +264,194 @@ CRC8: XOR of all bytes (simple, fast)
 0x04  TURN_RIGHT       - duration_ms (2B), speed (1B)
 0x05  STOP             - (no payload)
 0x06  DRIVE            - left_speed (1B), right_speed (1B)
-0x0A  EMERGENCY_STOP   - (no payload)
+0x07  GET_SENSORS      - (triggers telemetry response)
+0x08  SET_IR_LED       - state (1B: 0=off, 1=on)
+0x09  EMERGENCY_STOP   - (no payload)
+0x0A  PING             - (no payload, expects PONG)
 ```
 
-**Status Response (Arduino → ESP32):**
+**Telemetry (ESP32 → Phone):**
 ```
-0x08  STATUS           - battery (1B), encL (2B), encR (2B)
+┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
+│ Bat% │ EncL │ EncR │ AccX │ AccY │ AccZ │ GyrZ │ Flags│
+│ 1B   │ 2B   │ 2B   │ 2B   │ 2B   │ 2B   │ 2B   │ 1B   │
+└──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
 
-Sent at 10Hz or on request
+Flags byte: bit 0 = IR LED state
+Sent at 10Hz (100ms intervals)
+Total: 14 bytes per packet
 ```
 
 **Example Flow:**
 ```
-Phone sends BLE command:
-  [0x01][0x03][0x07 0xD0][0x50]  // MOVE_FORWARD, 2000ms, 80%
+Phone sends UART command:
+  [0x02][0x01][0x03][0x07 0xD0][0x50][CRC]  // MOVE_FORWARD, 2000ms, 80%
 
-ESP32 receives, translates to UART:
-  [0x02][0x01][0x03][0x07 0xD0][0x50][CRC]
+ESP32 drives motors via GPIO PWM for 2000ms at 80% speed
 
-Arduino executes motor command for 2000ms at 80% speed
-
-Arduino sends status every 100ms:
+ESP32 sends telemetry every 100ms:
   [0x02][0x08][0x05][0x64][0x00 0x45][0x00 0x42][CRC]
   // Battery 100%, EncL=69, EncR=66
 
-ESP32 forwards to phone via BLE telemetry
+Phone forwards relevant telemetry to team controller via WiFi
 ```
 
 ---
 
-### Software Layers (3-Tier Abstraction)
+### Software Layers (2-Tier per Node + Team Controller)
 
-#### **Layer 0: Firmware (Arduino C++ on ESP32 + Arduino)**
-Compiled via Arduino IDE, handles real-time operations.
+#### **Layer 0: ESP32 Firmware (Arduino C++)**
+Compiled via Arduino IDE. Hardware bridge — receives UART commands from phone, drives I/O.
 
-**ESP32 Firmware:**
 ```cpp
-// Arduino C++ - runs on ESP32 main controller
-#include <BLEDevice.h>
-#include <MPU6886.h>
+// Arduino C++ - runs on ESP32 hardware bridge
+#include <Wire.h>       // I2C for sensors
+#include <MPU6886.h>    // IMU
 
-BLECharacteristic* cmdCharacteristic;
-BLECharacteristic* telemetryCharacteristic;
+#define IR_LED_PIN 25
+#define MOTOR_L_PIN 26
+#define MOTOR_R_PIN 27
 
-void onCommandReceived(uint8_t* data, size_t len) {
+void onUARTCommand(uint8_t* data, size_t len) {
     uint8_t cmd = data[0];
     switch(cmd) {
-        case CMD_MOVE_FORWARD:
+        case CMD_MOVE_FORWARD: {
             uint16_t duration = (data[2] << 8) | data[3];
             uint8_t speed = data[4];
-            sendToArduino(CMD_MOVE_FORWARD, duration, speed);
+            int pwm = map(speed, 0, 100, 0, 255);
+            analogWrite(MOTOR_L_PIN, pwm);
+            analogWrite(MOTOR_R_PIN, pwm);
+            delay(duration);
+            stopMotors();
+            break;
+        }
+        case CMD_SET_IR_LED:
+            digitalWrite(IR_LED_PIN, data[2] ? HIGH : LOW);
             break;
         case CMD_STOP:
-            sendToArduino(CMD_STOP);
+            stopMotors();
             break;
-        // ... other commands
     }
 }
 
 void sendTelemetry() {
-    // Called every 100ms
+    // Called every 100ms, sent to phone via UART
     uint8_t packet[14];
-    packet[0] = batteryPercent;
-    // ... pack encoder, IMU data
-    telemetryCharacteristic->setValue(packet, 14);
-    telemetryCharacteristic->notify();
-}
-```
-
-**Arduino Motor Controller:**
-```cpp
-// Arduino C++ - runs on Arduino Nano
-void executeMotorCommand(uint8_t cmd, uint16_t duration, uint8_t speed) {
-    int pwmValue = map(speed, 0, 100, 0, 255);
-
-    switch(cmd) {
-        case CMD_MOVE_FORWARD:
-            analogWrite(MOTOR_L, pwmValue);
-            analogWrite(MOTOR_R, pwmValue);
-            delay(duration);
-            stopMotors();
-            break;
-        // ... other commands
-    }
+    packet[0] = readBatteryPercent();     // ADC
+    packEncoders(&packet[1]);             // GPIO interrupts
+    packIMU(&packet[5]);                  // I2C
+    packet[13] = digitalRead(IR_LED_PIN); // Flags
+    Serial.write(packet, 14);
 }
 ```
 
 ---
 
-#### **Layer 1: Phone App (Python)**
-Runs on each bot's phone. Each phone controls only its own bot via BLE, but coordinates with teammates via WiFi mesh.
+#### **Layer 1: Node Phone App (Python)**
+Runs on each bot's phone. Controls ESP32 via UART. Receives commands from team controller via WiFi.
 
-**Bot Controller (Runs on Each Phone):**
 ```python
 # Python - runs on each bot's mounted phone
 import asyncio
-from bleak import BleakClient
+import serial  # USB-OTG serial to ESP32
 
-class BotController:
-    """Controls this bot's ESP32 via BLE"""
+class BotHardware:
+    """Controls this bot's ESP32 via UART (USB-OTG serial)"""
 
-    def __init__(self, esp32_address):
-        self.client = BleakClient(esp32_address)
+    def __init__(self, serial_port='/dev/ttyUSB0'):
+        self.ser = serial.Serial(serial_port, 115200)
         self.telemetry = {}
 
-    async def connect(self):
-        await self.client.connect()
-        await self.client.start_notify(TELEMETRY_UUID, self._on_telemetry)
-
-    async def move_forward(self, duration_ms, speed_percent):
-        cmd = bytes([0x01, 0x03,
+    def move_forward(self, duration_ms, speed_percent):
+        cmd = bytes([0x02, 0x01, 0x03,
                      duration_ms >> 8, duration_ms & 0xFF,
-                     speed_percent])
-        await self.client.write_gatt_char(CMD_UUID, cmd)
+                     speed_percent, self._crc()])
+        self.ser.write(cmd)
 
-    async def stop(self):
-        await self.client.write_gatt_char(CMD_UUID, bytes([0x05]))
+    def set_ir_led(self, on: bool):
+        cmd = bytes([0x02, 0x08, 0x01, 0x01 if on else 0x00, self._crc()])
+        self.ser.write(cmd)
 
-    def _on_telemetry(self, sender, data):
+    def stop(self):
+        self.ser.write(bytes([0x02, 0x05, 0x00, self._crc()]))
+
+    def read_telemetry(self):
+        data = self.ser.read(14)
         self.telemetry = {
             'battery': data[0],
             'encoder_left': (data[1] << 8) | data[2],
             'encoder_right': (data[3] << 8) | data[4],
+            'ir_led': bool(data[13] & 0x01),
         }
+        return self.telemetry
 
 
-class TeamMesh:
-    """Coordinates with other bots via WiFi mesh"""
+class NodeClient:
+    """Receives commands from team controller over WiFi"""
 
-    def __init__(self, team_id, bot_id):
-        self.team_id = team_id
-        self.bot_id = bot_id
-        self.teammates = {}  # {bot_id: {position, telemetry, ...}}
+    def __init__(self, controller_ip, node_id):
+        self.controller_ip = controller_ip
+        self.node_id = node_id
 
-    async def broadcast_position(self, position):
-        """Share my position with teammates"""
-        # WiFi mesh broadcast
+    async def receive_command(self):
+        """Listen for next command from team controller"""
+        # TCP connection to team controller
         pass
 
-    async def get_teammate_positions(self):
-        """Get current positions of all teammates"""
-        return self.teammates
+    async def send_telemetry(self, telemetry):
+        """Report sensor data back to team controller"""
+        # UDP to team controller
+        pass
 ```
 
-**Behavior Script (Uploaded by Pilot):**
+**Local fallback behavior (runs when WiFi to controller is lost):**
 ```python
-# Python - written by pilot with LLM assistance
-# Uploaded to all 30 phones before match
-
-async def behavior_main(bot: BotController, mesh: TeamMesh):
-    """Main behavior loop - runs on each bot's phone"""
-
-    while match_running:
-        # Get my telemetry
-        my_pos = bot.telemetry.get('position')
-
-        # Get teammate positions via mesh
-        teammates = await mesh.get_teammate_positions()
-
-        # Execute swarm behavior
-        if should_move_to_goal(my_pos, teammates):
-            await bot.move_forward(500, 80)
-        elif should_spread_out(my_pos, teammates):
-            await move_away_from_nearest(bot, teammates)
-
-        # Broadcast my position to team
-        await mesh.broadcast_position(my_pos)
-
+async def fallback_behavior(bot: BotHardware):
+    """Runs on node phone when team controller is unreachable"""
+    bot.set_ir_led(True)  # Stay visible
+    while not controller_connected():
+        telemetry = bot.read_telemetry()
+        # Simple obstacle avoidance using local sensors only
+        if obstacle_detected(telemetry):
+            bot.stop()
+            bot.move_forward(200, 30)  # Slow creep
         await asyncio.sleep(0.1)
-
-
-async def move_away_from_nearest(bot, teammates):
-    """Spread out from nearest teammate"""
-    nearest = find_nearest(bot.telemetry['position'], teammates)
-    angle = calculate_away_angle(bot.telemetry['position'], nearest)
-    await bot.turn_to(angle)
-    await bot.move_forward(200, 60)
 ```
 
 ---
 
-#### **Layer 2: Pilot's Development Environment**
-Runs on pilot's laptop/desktop before match.
+#### **Layer 2: Team Controller Script (Python)**
+Runs on pilot's laptop/phone. The main swarm brain.
 
-**Main Tools:**
+```python
+# Python - runs on team main controller
+# Written by pilot with LLM assistance before match
 
-**1. Script Editor**
-- Syntax-highlighted Python editor
-- LLM assistant panel (ask Claude/ChatGPT for help)
-- Test single bot behavior locally
-- Console output for debugging
+class SwarmController:
+    """Manages 30 bot nodes from team controller"""
 
-**2. Simulator**
-- Test full 30-bot strategy virtually
-- Same physics as physical arena
-- Iterate before deploying to real bots
+    def __init__(self, nodes: list, overview_cam):
+        self.nodes = nodes          # 30 NodeConnection objects
+        self.cam = overview_cam     # IR LED position feed
 
-**3. Fleet Manager**
-- Upload script to all 30 phones
-- Verify all bots connected and ready
-- Pre-match status dashboard
+    async def run(self):
+        """Main loop - runs for 90 seconds"""
+        while match_running:
+            # Input 1: overview camera (god-view positions)
+            positions = self.cam.get_all_positions()
 
-**4. Match Recorder (Post-Match)**
-- Collect POV footage from all 60 phones
-- Aggregate telemetry logs
-- Upload to Knowledge Commons
+            # Input 2: node telemetry (per-bot sensor data)
+            telemetry = {n.id: n.last_telemetry for n in self.nodes}
 
-**5. Match Recorder**
-- Start/stop match recording
-- Captures: all commands, telemetry, timestamps
-- Exports to Knowledge Commons format
-- Optional screen recording
+            # Strategy logic (programmatic or LLM-triggered)
+            commands = self.compute_formation(positions, telemetry)
+
+            # Send commands to nodes over WiFi
+            for node, cmd in commands.items():
+                await node.send_command(cmd)
+
+            await asyncio.sleep(0.25)  # 4Hz update cycle
+```
 
 ---
 
@@ -550,16 +476,16 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 │  │  Pilot's Python Script (Same as Phone App)                │  │
 │  │                                                           │  │
 │  │  - Identical swarm behavior code                         │  │
-│  │  - Connects to virtual bots via mock BLE interface       │  │
+│  │  - Connects to virtual bots via mock UART interface       │  │
 │  │  - Receives simulated telemetry                          │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
-│                           │ Mock BLE                            │
+│                           │ Mock UART                            │
 │                           ▼                                     │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  60 Virtual Bots (Python Processes)                       │  │
 │  │                                                           │  │
 │  │  Each bot emulates:                                       │  │
-│  │  - BLE command interface (same protocol as physical)     │  │
+│  │  - UART command interface (same protocol as physical)     │  │
 │  │  - ESP32 firmware behavior (command → motor translation) │  │
 │  │  - Arduino motor response (motor → position update)      │  │
 │  │  - Sensors (simulated with realistic noise)              │  │
@@ -608,7 +534,7 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 
 ### Virtual Bot Implementation
 
-**Key Design Principle:** Exact BLE API compatibility with physical bots. The pilot's Python swarm code runs unchanged against virtual bots. Autobattler format with offline rendering.
+**Key Design Principle:** Exact UART API compatibility with physical bots. The pilot's Python swarm code runs unchanged against virtual bots. Autobattler format with offline rendering.
 
 ```python
 # virtual_bot.py
@@ -616,7 +542,7 @@ import asyncio
 import numpy as np
 
 class VirtualBot:
-    """Emulates ESP32 + Arduino stack with BLE interface"""
+    """Emulates ESP32 hardware bridge with UART interface"""
 
     def __init__(self, bot_id, game_server):
         self.id = bot_id
@@ -638,13 +564,13 @@ class VirtualBot:
         # Command log for replay
         self.command_log = []
 
-    # BLE-compatible interface (same as physical Bot class)
+    # UART-compatible interface (same as physical BotHardware class)
     async def connect(self):
-        """Mock BLE connection"""
+        """Mock UART connection"""
         return True
 
     async def disconnect(self):
-        """Mock BLE disconnection"""
+        """Mock UART disconnection"""
         pass
 
     async def move_forward(self, duration_ms, speed_percent):
@@ -729,8 +655,8 @@ class VirtualBot:
         }
 
 
-# Mock BLE adapter for simulator
-class VirtualBLEAdapter:
+# Mock UART adapter for simulator
+class VirtualUARTAdapter:
     """Allows phone app code to run against virtual bots"""
 
     def __init__(self, virtual_bots):
@@ -746,7 +672,7 @@ class VirtualBLEAdapter:
 
 
 # Usage: Pilot's swarm code runs unchanged
-# Just swap BLE adapter for VirtualBLEAdapter
+# Just swap UART adapter for VirtualUARTAdapter
 ```
 
 ---
@@ -981,7 +907,7 @@ More Competitors → More Physical Matches
 
 **Hardware (~€50-100):**
 - ESP32 DevKit/M5 Atom: €8-15
-- Arduino Nano (motor controller): €3-5
+- Motor driver board: €3-5
 - 2x N20 gear motors + wheels: €8-12
 - L298N mini motor driver: €3-5
 - 7.4V 500mAh LiPo: €8-12
@@ -989,8 +915,8 @@ More Competitors → More Physical Matches
 - Optional: MPU6886 IMU: €5-8
 
 **Software (all Arduino IDE):**
-- ESP32 firmware (BLE server, sensor reading)
-- Arduino Nano firmware (motor control, encoders)
+- ESP32 firmware (UART bridge, sensor reading, motor/LED control)
+- ESP32 firmware (UART bridge, motor control, sensors, IR LED)
 
 ### Maintenance Class Bot (60cm) - Per Unit
 
@@ -1015,12 +941,12 @@ More Competitors → More Physical Matches
 
 **Hardware:**
 - Any modern smartphone (Android 10+ or iOS 14+)
-- BLE 5.0 support (standard on phones from 2019+)
+- USB-OTG support for UART serial to ESP32
 - Used phones work fine (~€50-100 each)
 
 **Software:**
 - Python app (Kivy, BeeWare, or similar framework)
-- BLE library (bleak for Python)
+- pyserial (UART serial to ESP32)
 - WiFi mesh for team coordination
 - POV camera recording
 
@@ -1061,7 +987,7 @@ More Competitors → More Physical Matches
 ### Logistics Operations
 - Firmware deployment to rental fleets (Arduino IDE OTA or USB)
 - Match data collection via phone app uploads
-- Quality control (validate BLE connectivity, sensor readings)
+- Quality control (validate UART connectivity, sensor readings)
 - Bounty verification (test in simulator before physical demo)
 
 ### League Management
@@ -1075,14 +1001,14 @@ More Competitors → More Physical Matches
 ## Development Roadmap
 
 ### Phase 1: Physical Bot Firmware (Months 1-3)
-- BLE protocol specification (command/telemetry format)
-- ESP32 BLE server firmware (Arduino C++)
+- UART protocol specification (command/telemetry format)
+- ESP32 hardware bridge firmware (Arduino C++)
 - Arduino motor controller firmware (Arduino C++)
 - Integration testing (phone → ESP32 → Arduino)
 
 ### Phase 2: Phone App Core (Months 2-4)
 - Python app framework setup (Kivy or similar)
-- BLE connection manager (multi-bot support)
+- UART serial connection to ESP32
 - Basic manual control UI (joystick, telemetry display)
 - Script editor with syntax highlighting
 - LLM integration for script assistance
@@ -1090,7 +1016,7 @@ More Competitors → More Physical Matches
 ### Phase 3: Virtual Simulator Core (Months 4-6)
 - Python game server (250ms updates, no physics engine)
 - Cluster detection + position prediction
-- Virtual BLE adapter (same API as physical)
+- Virtual UART adapter (same API as physical)
 - Run phone app code against virtual bots
 - Blender rendering pipeline
 
@@ -1139,13 +1065,13 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 
 **Key Architecture Decision:**
 - **Phone App (Python)**: All swarm logic, UI, LLM integration, recording
-- **ESP32 (Arduino C++)**: BLE communication, sensor fusion, command relay
+- **ESP32 (Arduino C++)**: UART bridge to phone, I2C/SPI/GPIO hardware interface
 - **Arduino (Arduino C++)**: Motor control, precise timing, safety
-- **Same Python code** runs against physical bots (via BLE) and virtual bots (via mock adapter)
+- **Same Python code** runs against physical bots (via UART) and virtual bots (via mock adapter)
 
 **Why Arduino IDE (not MicroPython):**
 - Faster execution with deterministic timing
-- Better library ecosystem (BLE, IMU, motors)
+- Better library ecosystem (I2C, SPI, IMU, motors)
 - LLMs generate better Arduino C++ than MicroPython
 - Easier debugging with Serial Monitor
 - More examples and community support
