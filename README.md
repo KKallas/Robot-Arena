@@ -98,15 +98,15 @@ See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full hardware specs.
 ```
                     TEAM SETUP (x2 in Sumo, x1 in Challenge)
 
-  ┌──────────────────────────┐         ┌───────────────────────┐
-  │   Overview Camera        │         │  Team Main Controller │
-  │   (above arena)          │         │  (laptop/phone)       │
-  │                          │         │                       │
-  │   Sees IR LEDs on all    │────────▶│  Runs Python script   │
-  │   bots, provides god-    │  video  │  (programmatic or     │
-  │   view position data     │  feed   │   LLM-based triggers) │
-  └──────────────────────────┘         └───────────┬───────────┘
-                                                   │ WiFi (hackable)
+  ┌──────────────────────────┐          ┌───────────────────────┐
+  │   Overview Camera        │          │  Team Main Controller │
+  │   (above arena)          │          │  (laptop/phone)       │
+  │                          │          │                       │
+  │   Sees IR LEDs on all    │─────────▶│  Runs Python script   │
+  │   bots, provides god-    │  video   │  (programmatic or     │
+  │   view position data     │  feed    │   LLM-based triggers) │
+  └──────────────────────────┘          └───────────┬───────────┘
+                                                    │ WiFi (hackable)
                               ┌─────────────────────┼─────────────────────┐
                               │                     │                     │
                               ▼                     ▼                     ▼
