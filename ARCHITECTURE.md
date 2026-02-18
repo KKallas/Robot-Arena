@@ -24,31 +24,31 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Robot Arena Ecosystem                     │
+│                        Robot Arena Ecosystem                    │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌───────────────┐ │
-│  │   Knowledge      │  │   Logistics      │  │    League     │ │
-│  │   Commons        │  │   Operations     │  │  Management   │ │
-│  │                  │  │                  │  │               │ │
-│  │ - Match Datasets │  │ - Fleet Rental   │  │ - Events      │ │
-│  │ - Strategies     │  │ - Manufacturing  │  │ - Media       │ │
-│  │ - ML Models      │  │ - Maintenance    │  │ - Sponsors    │ │
-│  └────────┬─────────┘  └────────┬─────────┘  └───────┬───────┘ │
-│           │                     │                     │          │
-│           └─────────────────────┴─────────────────────┘          │
-│                                 │                                │
+│                                                                 │
+│  ┌──────────────────┐  ┌──────────────────┐   ┌───────────────┐ │
+│  │   Knowledge      │  │   Logistics      │   │    League     │ │
+│  │   Commons        │  │   Operations     │   │  Management   │ │
+│  │                  │  │                  │   │               │ │
+│  │ - Match Datasets │  │ - Fleet Rental   │   │ - Events      │ │
+│  │ - Strategies     │  │ - Manufacturing  │   │ - Media       │ │
+│  │ - ML Models      │  │ - Maintenance    │   │ - Sponsors    │ │
+│  └────────┬─────────┘  └────────┬─────────┘   └───────┬───────┘ │
+│           │                     │                     │         │
+│           └─────────────────────┴─────────────────────┘         │
+│                                 │                               │
 │                    ┌────────────┴────────────┐                  │
 │                    │                         │                  │
-│         ┌──────────▼──────────┐   ┌─────────▼──────────┐       │
-│         │  Physical System    │   │ Virtual Simulator  │       │
-│         │                     │   │                    │       │
-│         │ - Phone App (Python)│   │ - Python Emulator  │       │
-│         │ - ESP32 Firmware    │   │ - Game Server      │       │
-│         │ - Phone Camera      │   │ - Collision LUT    │       │
-│         │ - UART/WiFi Protocol│   │ - Blender Render   │       │
-│         └─────────────────────┘   └────────────────────┘       │
-│                                                                  │
+│         ┌──────────▼──────────┐   ┌─────────▼──────────┐        │
+│         │  Physical System    │   │ Virtual Simulator  │        │
+│         │                     │   │                    │        │
+│         │ - Phone App (Python)│   │ - Python Emulator  │        │
+│         │ - ESP32 Firmware    │   │ - Game Server      │        │
+│         │ - Phone Camera      │   │ - Collision LUT    │        │
+│         │ - UART/WiFi Protocol│   │ - Blender Render   │        │
+│         └─────────────────────┘   └────────────────────┘        │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,24 +70,24 @@ Both classes share the same software architecture (phone app + ESP32 firmware vi
 ### Hardware Stack - Phone + ESP32 Bridge
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│          Single Bot Node (1 of 30 per team, 60 total on field)  │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+┌────────────────────────────────────────────────────────────────┐
+│     Single Bot Node (1 of 30 per team, 60 total on field)      │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │           Phone (Mounted on Bot - Python App)             │  │
-│  │                                                           │  │
+│  │           Phone (Mounted on Bot - Python App)            │  │
+│  │                                                          │  │
 │  │  - Bot's brain: runs local behavior logic (Python)       │  │
 │  │  - POV camera: records match footage for dataset         │  │
 │  │  - WiFi: receives commands from team controller          │  │
 │  │  - WiFi: reports telemetry back to team controller       │  │
 │  │  - UART to ESP32 via USB-OTG serial                      │  │
 │  └──────────────────────────┬───────────────────────────────┘  │
-│                              │ UART (USB-OTG serial)            │
-│                              ▼                                  │
+│                              │ UART (USB-OTG serial)           │
+│                              ▼                                 │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │           ESP32 Hardware Bridge (Arduino C++)             │  │
-│  │                                                           │  │
+│  │           ESP32 Hardware Bridge (Arduino C++)            │  │
+│  │                                                          │  │
 │  │  - Receives commands from phone via UART                 │  │
 │  │  - I2C: IMU, magnetometer, other sensors                 │  │
 │  │  - SPI: high-speed peripherals                           │  │
@@ -95,10 +95,10 @@ Both classes share the same software architecture (phone app + ESP32 firmware vi
 │  │  - ADC: battery voltage monitoring                       │  │
 │  │  - Streams sensor telemetry back to phone via UART       │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                                                                  │
+│                                                                │
 │  Starter (20cm): 7.4V 500mAh LiPo, ~200g, €50-100              │
 │  Maintenance (60cm): 11.1V 5000mAh LiPo, ~5kg, €200-400        │
-└─────────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────┘
 ```
 
 **Two layers per node:**
@@ -468,66 +468,66 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 - Strategy generation "on the go" is a future enhancement
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│              Virtual Arena (Mac Mini M4)                         │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
+┌────────────────────────────────────────────────────────────────┐
+│              Virtual Arena (Mac Mini M4)                       │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  Pilot's Python Script (Same as Phone App)                │  │
-│  │                                                           │  │
+│  │  Pilot's Python Script (Same as Phone App)               │  │
+│  │                                                          │  │
 │  │  - Identical swarm behavior code                         │  │
-│  │  - Connects to virtual bots via mock UART interface       │  │
+│  │  - Connects to virtual bots via mock UART interface      │  │
 │  │  - Receives simulated telemetry                          │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
-│                           │ Mock UART                            │
-│                           ▼                                     │
+│                           │ Mock UART                          │
+│                           ▼                                    │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │  60 Virtual Bots (Python Processes)                       │  │
-│  │                                                           │  │
-│  │  Each bot emulates:                                       │  │
-│  │  - UART command interface (same protocol as physical)     │  │
+│  │  60 Virtual Bots (Python Processes)                      │  │
+│  │                                                          │  │
+│  │  Each bot emulates:                                      │  │
+│  │  - UART command interface (same protocol as physical)    │  │
 │  │  - ESP32 firmware behavior (command → motor translation) │  │
 │  │  - Arduino motor response (motor → position update)      │  │
 │  │  - Sensors (simulated with realistic noise)              │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
-│                           │                                     │
-│                           ▼                                     │
+│                           │                                    │
+│                           ▼                                    │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │         Game Server (Python - No Physics Engine)          │  │
-│  │                                                           │  │
+│  │         Game Server (Python - No Physics Engine)         │  │
+│  │                                                          │  │
 │  │  - Updates 60 bot positions @ 250ms (4Hz)                │  │
 │  │  - Cluster detection: identify bots needing interaction  │  │
 │  │  - ML prediction: last 5 keyframes → next + % match      │  │
-│  │  - Arena boundaries, goal circles (Sumo), obstacles       │  │
+│  │  - Arena boundaries, goal circles (Sumo), obstacles      │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
-│                           │                                     │
-│                           ▼                                     │
+│                           │                                    │
+│                           ▼                                    │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │      ML Predictor (5 Keyframes → Next + % Match)          │  │
-│  │                                                           │  │
+│  │      ML Predictor (5 Keyframes → Next + % Match)         │  │
+│  │                                                          │  │
 │  │  Built from real match data in Knowledge Commons:        │  │
 │  │  - Input: last 5 keyframes (positions, velocities)       │  │
 │  │  - Output: next keyframe + % match to original data      │  │
 │  │  - Reports which training tracks were used               │  │
 │  │  - Accuracy: 87% position, 92% damage (validated)        │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
-│                           │                                     │
-│                           ▼                                     │
+│                           │                                    │
+│                           ▼                                    │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │    Blender (Offline Rendering - Lo-Fi Aesthetic)          │  │
-│  │                                                           │  │
+│  │    Blender (Offline Rendering - Lo-Fi Aesthetic)         │  │
+│  │                                                          │  │
 │  │  - Reads position timeline after match completion        │  │
 │  │  - Renders all camera angles in parallel                 │  │
 │  │  - Lo-fi cyberpunk: low-poly, CRT lines, visible grids   │  │
 │  │  - Generates 61 camera outputs (60 POV + 1 overhead)     │  │
 │  │  - Exports final video files (MP4/WebM)                  │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                                                                  │
-│  Offline/Batch Processing Benefits:                              │
-│  - Matches can be prepared, signed, and queued                  │
-│  - Non-realtime simulation for scalability                      │
-│  - Multiple matches rendered sequentially on single machine     │
-└─────────────────────────────────────────────────────────────────┘
+│                                                                │
+│  Offline/Batch Processing Benefits:                            │
+│  - Matches can be prepared, signed, and queued                 │
+│  - Non-realtime simulation for scalability                     │
+│  - Multiple matches rendered sequentially on single machine    │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -871,7 +871,7 @@ battle-2026-01-07-001/
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Data Flywheel                             │
+│                    Data Flywheel                            │
 └─────────────────────────────────────────────────────────────┘
 
 Physical Matches (Real Arena)
