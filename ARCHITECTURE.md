@@ -44,7 +44,7 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 │         │  Physical System    │   │ Virtual Simulator  │       │
 │         │                     │   │                    │       │
 │         │ - Phone App (Python)│   │ - Python Emulator  │       │
-│         │ - Arduino Firmware  │   │ - Game Server      │       │
+│         │ - ESP32 Firmware    │   │ - Game Server      │       │
 │         │ - Phone Camera      │   │ - Collision LUT    │       │
 │         │ - UART/WiFi Protocol│   │ - Blender Render   │       │
 │         └─────────────────────┘   └────────────────────┘       │
@@ -60,12 +60,12 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 
 Robot Arena has two official robot classes. See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full details.
 
-| Class | Size Constraint | Cost | Use Case |
-|-------|-----------------|------|----------|
-| **Starter (20cm)** | Fits in 20cm circle, max 20cm height | €50-100 | Learning, Swarm Sumo |
-| **Maintenance (60cm)** | Fits in 60cm circle, max 60cm height | €200-400 | Bounties, Infrastructure |
+| Class | Size Constraint | Cost | Game Mode | Arena |
+|-------|-----------------|------|-----------|-------|
+| **Starter (20cm)** | Fits in 20cm circle, max 20cm height | €100-150 | Sumo (teams) | 3x3m fixed floor |
+| **Maintenance (60cm)** | Fits in 60cm circle, max 60cm height | €250-450 | Challenges (vs clock) | Modular 1x1m modules |
 
-Both classes share the same software architecture (phone app + Arduino firmware).
+Both classes share the same software architecture (phone app + ESP32 firmware via UART).
 
 ### Hardware Stack - Phone + ESP32 Bridge
 
@@ -498,7 +498,7 @@ The simulator uses an **autobattler format** with offline Blender rendering in a
 │  │  - Updates 60 bot positions @ 250ms (4Hz)                │  │
 │  │  - Cluster detection: identify bots needing interaction  │  │
 │  │  - ML prediction: last 5 keyframes → next + % match      │  │
-│  │  - Arena boundaries, goal circles, obstacles             │  │
+│  │  - Arena boundaries, goal circles (Sumo), obstacles       │  │
 │  └────────────────────────┬─────────────────────────────────┘  │
 │                           │                                     │
 │                           ▼                                     │
@@ -916,24 +916,23 @@ More Competitors → More Physical Matches
 
 **Software (all Arduino IDE):**
 - ESP32 firmware (UART bridge, sensor reading, motor/LED control)
-- ESP32 firmware (UART bridge, motor control, sensors, IR LED)
 
 ### Maintenance Class Bot (60cm) - Per Unit
 
-**Hardware (~€200-400):**
-- ESP32 main controller: €10-15
-- Raspberry Pi (optional, for vision): €50-80
+**Hardware (~€250-450):**
+- ESP32 hardware bridge: €10-15
+- Phone (used Android, mounted on bot): €50-100
 - 4x brushless motors + ESCs: €60-100
 - Motor driver board: €20-30
 - 11.1V 5000mAh LiPo: €40-60
 - Aluminum/printed chassis: €30-50
 - Weatherproof enclosure: €20-40
-- Sensor package (lidar, camera): €50-100
+- Sensor package (lidar, phone camera): €30-70
 - Modular attachment mount: €20-30
 
 **Software:**
-- Same Arduino IDE firmware as Starter Class
-- Additional: Raspberry Pi vision processing (optional)
+- Same ESP32 Arduino IDE firmware as Starter Class
+- Phone runs Python app (same as Starter Class)
 
 ### Bot Phones (60 per Match)
 
@@ -947,7 +946,7 @@ More Competitors → More Physical Matches
 **Software:**
 - Python app (Kivy, BeeWare, or similar framework)
 - pyserial (UART serial to ESP32)
-- WiFi mesh for team coordination
+- WiFi client for team controller communication
 - POV camera recording
 
 ---
@@ -1003,8 +1002,7 @@ More Competitors → More Physical Matches
 ### Phase 1: Physical Bot Firmware (Months 1-3)
 - UART protocol specification (command/telemetry format)
 - ESP32 hardware bridge firmware (Arduino C++)
-- Arduino motor controller firmware (Arduino C++)
-- Integration testing (phone → ESP32 → Arduino)
+- Integration testing (phone → UART → ESP32 → motors/sensors)
 
 ### Phase 2: Phone App Core (Months 2-4)
 - Python app framework setup (Kivy or similar)
@@ -1065,8 +1063,7 @@ This architecture creates a **complete ecosystem** where physical and virtual ro
 
 **Key Architecture Decision:**
 - **Phone App (Python)**: All swarm logic, UI, LLM integration, recording
-- **ESP32 (Arduino C++)**: UART bridge to phone, I2C/SPI/GPIO hardware interface
-- **Arduino (Arduino C++)**: Motor control, precise timing, safety
+- **ESP32 (Arduino C++)**: UART bridge to phone, I2C/SPI/GPIO hardware interface (motors, sensors, IR LED)
 - **Same Python code** runs against physical bots (via UART) and virtual bots (via mock adapter)
 
 **Why Arduino IDE (not MicroPython):**

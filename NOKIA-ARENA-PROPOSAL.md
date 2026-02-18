@@ -64,7 +64,7 @@ Similarly, Nokia Arena doesn't build robots. It maintains:
 ### 1. Neutral Competition Standards
 **Like Linux kernel standards, but for swarm robotics:**
 - UART protocol specification (16 commands, shared bus)
-- Competition rules (90-second format, 30 bots, WiFi-only)
+- Competition rules (90-second format, up to 30 bots per team, two game modes)
 - Dataset format (timeline CSVs, millisecond timestamps)
 - Safety regulations (voltage limits, arena dimensions)
 
@@ -120,8 +120,8 @@ Similarly, Nokia Arena doesn't build robots. It maintains:
 
 #### 3. Physical Venue at Scale
 **Nokia Arena building = permanent competitive venue:**
-- Multiple 3m×3m arenas (5-10 simultaneous matches)
-- Professional production equipment (60-camera setup, lighting, streaming)
+- Multiple Sumo arenas (3x3m fixed) and Challenge arenas (modular 1x1m modules)
+- Professional production equipment (overview cameras, lighting, streaming)
 - Corporate training rooms (workshops, hackathons)
 - Hardware lab (resurrection/modification workspace)
 - Conference space (quarterly championships, sponsor events)
@@ -395,8 +395,8 @@ After that, new arenas JOIN Nokia Arena network (franchise model), they don't co
 ### Physical Infrastructure (Nokia Arena Building)
 
 **Dedicated robotics wing (500m²):**
-- 5 competition arenas (3m × 3m each)
-- 60-camera production setup (12 cameras per arena)
+- 3 Sumo arenas (3x3m fixed) + 2 Challenge arenas (modular 1x1m modules with panel library)
+- Overview camera per arena + bot phone POV cameras
 - Control room (streaming, recording, editing)
 - Hardware lab (workbenches, 3D printers, soldering stations)
 - Pilot lounge (prep area, AI coding stations)

@@ -17,7 +17,7 @@
 - **Blender** (offline rendering) - open source, scriptable, lo-fi cyberpunk aesthetic
 - **Python game server** (no physics engine) - cluster detection, ML-based position prediction
 - **ML Predictor** - takes last 5 keyframes, predicts next + % match to original data
-- **Same MicroPython code** - identical init.py runs in simulator as on ESP32s
+- **Same Python code** - identical swarm code runs in simulator as on physical bot phones
 - **CSV timeline format** - writes identical events.csv as physical matches
 
 ## The Autobattler Format
@@ -172,7 +172,7 @@ Match preparation and results interface:
 
 ### `/ml-predictor/` (Python + NumPy)
 ML-based position predictor built from real match data:
-- Source: Per-drone logs from physical matches
+- Source: Per-node logs from physical matches
 - Input: Last 5 keyframes (positions, velocities, rotations)
 - Output: Next keyframe prediction + % match to original training data
 - Structure: Indexed by path similarity vectors for fast lookup

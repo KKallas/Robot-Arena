@@ -16,9 +16,7 @@ This specification defines the minimum viable product (MVP) for the Virtual Aren
 
 ## Documentation Consistency Note
 
-**Contradiction Found:** `ARCHITECTURE.md` references Unreal Engine 5 for rendering, while `04-virtual-arena-simulator/README.md` explicitly states Godot Engine 4.x. This spec follows the README's direction (Godot) as it appears to be a deliberate architectural revision toward a lightweight, open-source stack.
-
-**Recommendation:** Update `ARCHITECTURE.md` to reflect the Godot decision, or clarify if both rendering options will be supported.
+**Resolved:** Both `ARCHITECTURE.md` and `04-virtual-arena-simulator/README.md` now use Blender for offline rendering with a lo-fi cyberpunk aesthetic. No physics engine — ML-based position prediction from real match data instead.
 
 ---
 
@@ -57,7 +55,7 @@ This specification defines the minimum viable product (MVP) for the Virtual Aren
 ### 3. Virtual Bot Emulation
 
 **Minimum Requirements:**
-- Single bot class emulating M5 Atom + Arduino behavior
+- Single bot class emulating phone + ESP32 behavior
 - Execute Layer 0 movement commands (forward, backward, turn, stop)
 - Simulated IMU sensor data with noise injection
 - Basic position dead-reckoning

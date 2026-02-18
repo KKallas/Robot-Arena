@@ -90,10 +90,19 @@ Three autonomous agents handle operations:
 
 ## Competition Format
 
-2v2 Teams: Each team has 1 Pilot (30 bots) + 1 Hacker (WiFi attacks)
-- 60 total bots on 3x3m arena
+**Two game modes:**
+
+**Sumo (Starter Class, 20cm):**
+- 2 teams: Each has 1 Pilot (30 bots) + 1 Hacker (WiFi attacks)
+- 60 total bots on 3x3m fixed arena
 - 90-second rounds
-- Victory: Most bots in goal circles when time expires
+- Victory: Most bots in opponent's goal circle when time expires
+
+**Challenge (Maintenance Class, 60cm):**
+- 1 team: 1 Pilot + up to 30 bots vs clock
+- Modular arena built from 1x1m modules with 3D-printed panels
+- 90-second rounds
+- Victory: Complete task objective within time limit
 
 ---
 

@@ -4,7 +4,7 @@
 
 Two-tier data capture system:
 1. **Live timeline** - CSV events written during match, available for real-time playback
-2. **Per-drone logs** - Detailed ESP32 logs downloaded after match for debugging and simulator training
+2. **Per-node logs** - Detailed ESP32 logs downloaded after match for debugging and simulator training
 
 Single git commit after match captures everything. Timestamps enable playback without git commits during match.
 
@@ -29,7 +29,7 @@ Append-only. File grows during match.
 **Single commit after match ends:**
 - All processes flush and close files
 - events.csv contains complete timeline with millisecond timestamps
-- Per-drone logs downloaded from all ESP32s
+- Per-node logs downloaded from all ESP32s
 - One git commit captures everything
 - Tag with match_end
 - Push to repository
@@ -73,7 +73,7 @@ Contains high-level events:
 
 **File grows during match, available immediately for playback.**
 
-### Tier 2: Per-Drone Logs
+### Tier 2: Per-Node Logs
 
 **Downloaded after match** - stored on each ESP32 during match.
 
@@ -89,8 +89,8 @@ Contains detailed internal state:
 
 **Download process:**
 - Match ends
-- Script connects to each bot via WiFi
-- Downloads log file from ESP32 flash storage
+- Script connects to each bot's phone via WiFi
+- Downloads log file from phone storage (originally streamed from ESP32 via UART)
 - Saves as bot_01_internal.log, bot_02_internal.log, etc.
 - Commits to git alongside events.csv
 
@@ -114,7 +114,7 @@ Specific type numbering defined during implementation.
 
 Match folder contains:
 - **events.csv** - Live timeline (written during match, timestamp in milliseconds)
-- **bot_01_internal.log** through **bot_20_internal.log** - Per-drone logs (downloaded after match)
+- **bot_01_internal.log** through **bot_30_internal.log** - Per-node logs (downloaded after match)
 - **match_metadata.txt** - Match info (teams, outcome, duration)
 - **video_url.txt** - YouTube sync link
 
@@ -137,11 +137,11 @@ Playback scrubber filters by timestamp (millisecond precision).
 
 Simulator writes identical events.csv format with millisecond timestamps. Playback browser works for both physical and simulated matches.
 
-Train simulator on per-drone logs from physical matches. Generate synthetic matches. Compare predictions vs actual. Accuracy validates dataset quality.
+Train simulator on per-node logs from physical matches. Generate synthetic matches. Compare predictions vs actual. Accuracy validates dataset quality.
 
 ## CSV Choice
 
-Text format for git-friendly diffs, universal readability, debuggability. 90-second match with 20 bots @ 10Hz = roughly 1-2MB. Acceptable for git.
+Text format for git-friendly diffs, universal readability, debuggability. 90-second match with 60 bots @ 10Hz = roughly 1-2MB. Acceptable for git.
 
 Millisecond timestamps provide sufficient granularity without binary format complexity.
 

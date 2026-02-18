@@ -9,18 +9,18 @@
 
 Robot Arena has two official robot classes, each designed for specific use cases:
 
-| Class | Size Limit | Target Use | Budget | Competition Type |
-|-------|-----------|------------|--------|------------------|
-| **Starter Class (20cm)** | 20cm diameter, 20cm height | Learning, casual competition | €100-150 (incl. phone) | Swarm Sumo |
-| **Maintenance Class (60cm)** | 60cm diameter, 60cm height | Infrastructure work, bounties | €250-450 (incl. phone) | Bounty Challenges |
+| Class | Size Limit | Budget | Game Mode | Arena |
+|-------|-----------|--------|-----------|-------|
+| **Starter Class (20cm)** | 20cm diameter, 20cm height | €100-150 (incl. phone) | Sumo (teams) | 3x3m fixed floor |
+| **Maintenance Class (60cm)** | 60cm diameter, 60cm height | €250-450 (incl. phone) | Challenges (vs clock) | Modular 1x1m modules |
 
-Both classes share the same software architecture: **each bot has a phone mounted on it** running Python behavior scripts. One phone per bot, 30 phones per team, 60 phones on the field. The phone provides compute power, POV camera, and WiFi mesh coordination.
+Both classes share the same software architecture: **each bot has a phone mounted on it** running Python behavior scripts, with an ESP32 connected via UART (USB-OTG serial) as hardware bridge to motors, sensors, and IR LED. One phone per bot, up to 30 per team.
 
 ---
 
 ## Starter Class (20cm)
 
-**Purpose:** Low-cost entry point for learning swarm robotics and casual competition.
+**Purpose:** Low-cost entry point for learning swarm robotics. Used in Sumo mode (2 teams, 3x3m fixed arena).
 
 ### Physical Constraints
 
@@ -55,7 +55,6 @@ Both classes share the same software architecture: **each bot has a phone mounte
 **Bill of Materials (~€100-150 including phone):**
 - **Phone (mounted on bot):** €50-100 (used Android phone)
 - ESP32 DevKit or M5 Atom: €8-15
-- Arduino Nano (motor controller): €3-5
 - 2x N20 gear motors: €8-12
 - L298N mini motor driver: €3-5
 - 7.4V 500mAh LiPo: €8-12
@@ -69,20 +68,20 @@ Both classes share the same software architecture: **each bot has a phone mounte
 - Runtime: ~30 minutes continuous
 - Sensors: Basic (IMU, encoders) + phone camera
 - Compute: Full smartphone for behavior scripts
-- Communication: BLE (phone↔ESP32), WiFi mesh (team coordination)
+- Communication: UART (phone↔ESP32 via USB-OTG), WiFi (phone↔team controller)
 
 ### Who Uses Starter Class
 
+- **Ages 15-19:** The primary target audience — between ROS and bare-metal C/Python
 - **Schools:** Robotics clubs, STEM programs
 - **Beginners:** First-time competitors learning the ropes
-- **Casual Events:** Bar leagues, meetups, demo days
-- **Budget-Conscious:** Anyone wanting low buy-in
+- **Casual Events:** Meetups, demo days
 
 ---
 
 ## Maintenance Class (60cm)
 
-**Purpose:** Validated platform for real infrastructure maintenance work.
+**Purpose:** Larger platform for timed challenges. Used in Challenge mode (1 team vs clock, modular arena built from 1x1m modules with 3D-printed panels).
 
 ### Physical Constraints
 
@@ -132,28 +131,27 @@ Both classes share the same software architecture: **each bot has a phone mounte
 - Payload: Up to 2kg
 - Sensors: Full suite (lidar, phone camera, IMU, environmental)
 - Compute: Full smartphone for behavior scripts
-- Communication: BLE (phone↔ESP32), WiFi mesh (team coordination)
+- Communication: UART (phone↔ESP32 via USB-OTG), WiFi (phone↔team controller)
 - Weatherproof: IP54 minimum recommended
 - Modular: Standard attachment points for task-specific tools
 
 ### Who Uses Maintenance Class
 
-- **Infrastructure Operators:** Municipalities, utilities
-- **Bounty Hunters:** Teams solving real-world challenges
+- **Challenge Competitors:** Teams tackling timed tasks on modular arenas
 - **Professional Competitors:** Championship-level events
-- **Commercial Pilots:** Contracted maintenance work
+- **Infrastructure Operators:** Validated designs for real-world deployment
 
 ---
 
 ## Competition Types
 
-### Swarm Sumo (Starter + Maintenance Class)
+### Sumo (Starter Class, 20cm)
 
-**Format:** 2 teams compete to control territory
+**Format:** 2 teams compete to control territory on a fixed 3x3m arena.
 
 ```
 ┌─────────────────────────────────────────┐
-│              3m × 3m Arena              │
+│           3m × 3m Fixed Arena           │
 │                                         │
 │   🔴 Red                     Blue 🔵   │
 │   Goal                       Goal       │
@@ -168,58 +166,38 @@ Both classes share the same software architecture: **each bot has a phone mounte
 
 **Rules:**
 - 90-second matches
-- 2v2 teams (Pilot + Hacker per team)
+- 2 teams (Pilot + Hacker per team)
 - 30 bots per team (60 total on field)
 - **Victory:** Team with more bots in opponent's goal circle when time expires
 - Autobattler format: No intervention during match
 
-**Starter Class Swarm Sumo:**
-- Lower stakes, faster setup
-- €50-100 buy-in per bot
-- Great for learning, casual events
+### Challenge (Maintenance Class, 60cm)
 
-**Maintenance Class Swarm Sumo:**
-- Higher stakes, more complex strategies
-- €200-400 buy-in per bot
-- Championship-level competition
-
-### Bounty Challenges (Maintenance Class Only)
-
-**Format:** Single team attempts to solve a real-world task
+**Format:** Single team attempts to complete a task objective within 90 seconds on a modular arena.
 
 ```
 ┌─────────────────────────────────────────┐
-│           Bounty Challenge              │
+│        Modular Arena (1x1m modules)     │
 │                                         │
-│   Task: Clear 10m pipe section          │
-│   Time Limit: 5 minutes                 │
-│   Prize Pool: €500                      │
+│   ┌────┐┌────┐┌────┐                   │
+│   │    ││    ││    │  Each 1x1m module  │
+│   │    ││    ││    │  has 10x10cm       │
+│   └────┘└────┘└────┘  spigots for       │
+│   ┌────┐┌────┐┌────┐  3D-printed panels │
+│   │    ││    ││    │  (walls, ramps,    │
+│   │    ││    ││    │   obstacles, gates) │
+│   └────┘└────┘└────┘                    │
 │                                         │
-│   ┌─────────────────────────────────┐   │
-│   │  ══════════════════════════════ │   │
-│   │  Simulated pipe with obstacles  │   │
-│   └─────────────────────────────────┘   │
-│                                         │
+│   Different layout per challenge        │
 └─────────────────────────────────────────┘
 ```
 
 **Rules:**
-- No opponent (collaborative, not competitive)
-- Task defined by bounty poster (municipality, company, etc.)
-- Success criteria: Complete task within time/budget constraints
-- Results validate bounty solution for real-world deployment
-
-**Example Bounties:**
-- Pipe inspection: Navigate 10m pipe, identify 3 defects
-- Drainage clearing: Remove debris from 1m² drain grate
-- Surface inspection: Photograph 5m² wall for crack analysis
-- Glass cleaning: Clean 1m² window surface
-
-**Bounty Economics:**
-- Poster contributes base prize (e.g., €200)
-- Challengers pay entry fee (adds to pool)
-- Abandoned attempts increase prize
-- Winner takes pool + gets design validated
+- 90-second matches (1 team vs clock)
+- No opponent — the challenge is the task itself
+- 1 Pilot + up to 30 bots
+- Arena layout configured per challenge using modular 1x1m floor modules with 3D-printed panels
+- Success criteria defined per challenge
 
 ---
 
@@ -231,22 +209,21 @@ Both classes share the same software architecture: **each bot has a phone mounte
 | **Cost** | €100-150 (incl. phone) | €250-450 (incl. phone) |
 | **Build Time** | 1-2 days | 1-2 weeks |
 | **Skills Needed** | Basic soldering, 3D printing | Intermediate electronics, weatherproofing |
-| **Competition** | Swarm Sumo | Swarm Sumo + Bounties |
-| **Real Work** | No | Yes (infrastructure maintenance) |
-| **Rental Available** | Yes (events) | Yes (events + contracts) |
+| **Game Mode** | Sumo (teams) | Challenges (vs clock) |
+| **Arena** | 3x3m fixed floor | Modular 1x1m modules |
+| **Rental Available** | Yes (events) | Yes (events) |
 
 ---
 
 ## Upgrading Between Classes
 
 **Starter → Maintenance Path:**
-1. Master Starter Class competition (win events, build reputation)
-2. Learn maintenance-specific skills (weatherproofing, sensors)
+1. Master Sumo competition with Starter Class (win events, build reputation)
+2. Learn maintenance-specific skills (weatherproofing, sensors, larger platforms)
 3. Build or buy Maintenance Class bot
-4. Attempt bounty challenges
-5. Win bounties → real contracts
+4. Compete in Challenge mode on modular arenas
 
-**The progression is intentional:** Starter Class teaches swarm fundamentals without high financial risk. Maintenance Class applies those skills to economically valuable work.
+**The progression is intentional:** Starter Class teaches swarm fundamentals in Sumo without high financial risk. Maintenance Class applies those skills to more complex challenge tasks.
 
 ---
 

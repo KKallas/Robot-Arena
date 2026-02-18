@@ -16,14 +16,16 @@ Each bot has a phone on it — that's 60 cameras filming every match. 90-second 
 
 **Two game modes:**
 
-| Mode | Teams | Objective |
-|------|-------|-----------|
-| **Sumo** | 2 teams (Red vs Blue) | Most bots in opponent's goal circle when timer hits zero |
-| **Tech Demo** | 1 team vs clock | Complete task objective within 90 seconds |
+| Mode | Class | Teams | Arena | Objective |
+|------|-------|-------|-------|-----------|
+| **Sumo** | Starter (20cm) | 2 teams (Red vs Blue) | 3m x 3m fixed floor | Most bots in opponent's goal circle when timer hits zero |
+| **Challenge** | Maintenance (60cm) | 1 team vs clock | Modular (1x1m modules) | Complete task objective within 90 seconds |
 
-**Arena:** 3m x 3m floor. Overview camera mounted above sees the full arena. Goal circles at each end (Sumo) or task zones (Tech Demo).
+**Sumo arena:** 3m x 3m fixed floor. Goal circles at each end. Overview camera mounted above sees all IR LEDs and gives the controller a god-view of the arena.
 
-**Per team:** 1 main controller (laptop/phone) + 30 bot nodes on the field.
+**Challenge arena:** Built per challenge from 1x1m floor modules. Each module has 10x10cm spigots that accept 3D-printed panels — walls, ramps, obstacles, gates. Different challenges use different layouts. Overview camera above.
+
+**Per team:** 1 main controller (laptop/phone) + up to 30 bot nodes on the field.
 
 ### How a Match Runs
 
@@ -47,7 +49,7 @@ Every bot has an IR LED on top, visible to the overview camera. **The LED must b
 
 ### The Strategic Tradeoff: Central vs Local Processing
 
-The main controller talks to 30 nodes over WiFi. WiFi can be disrupted (by the opposing team's hacker in Sumo mode). This creates the core strategic tension:
+The main controller talks to nodes over WiFi. In Sumo, WiFi can be disrupted by the opposing team's hacker. This creates the core strategic tension:
 
 **Centralized (controller-heavy):**
 - Controller runs all strategy logic using overview cam + node telemetry
@@ -68,7 +70,9 @@ The main controller talks to 30 nodes over WiFi. WiFi can be disrupted (by the o
 
 **If you can process locally on the node, you don't depend on WiFi infrastructure.** This is the hacking defense — and the core skill gap between beginner and advanced pilots.
 
-### Teams (Sumo Mode)
+### Teams
+
+**Sumo (2 teams, Starter class):**
 
 | Role | Count | Job |
 |------|-------|-----|
@@ -77,12 +81,16 @@ The main controller talks to 30 nodes over WiFi. WiFi can be disrupted (by the o
 
 60 bots total on field (30 per team). Nobody touches anything once the match starts.
 
+**Challenge (1 team, Maintenance class):**
+
+1 Pilot + up to 30 bots vs the clock. No hacker role — no opponent to hack. The challenge is the task itself.
+
 ### Robot Classes
 
-| Class | Size | Cost | Use Case |
-|-------|------|------|----------|
-| **Starter (20cm)** | 20cm diameter, 20cm height max | ~€100-150 | Learning, casual events |
-| **Maintenance (60cm)** | 60cm diameter, 60cm height max | ~€250-450 | Tech demos, bounties |
+| Class | Size | Cost | Game Mode | Arena |
+|-------|------|------|-----------|-------|
+| **Starter (20cm)** | 20cm diameter, 20cm height max | ~€100-150 | Sumo (teams) | 3x3m fixed floor |
+| **Maintenance (60cm)** | 60cm diameter, 60cm height max | ~€250-450 | Challenges (vs clock) | Modular 1x1m modules |
 
 Each node is a **phone + ESP32**. The phone is the brain (runs Python, has camera, WiFi). The ESP32 connects to the phone via UART and serves as the hardware interface to low-level peripherals (I2C, SPI, GPIO → motors, sensors, IR LED). Open-source, 3D-printable chassis.
 
@@ -93,7 +101,7 @@ See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full hardware specs.
 ## Architecture
 
 ```
-                    TEAM SETUP (x2 in Sumo, x1 in Tech Demo)
+                    TEAM SETUP (x2 in Sumo, x1 in Challenge)
 
   ┌─────────────────────────┐         ┌──────────────────────┐
   │   Overview Camera        │         │  Team Main Controller │

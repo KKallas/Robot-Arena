@@ -1,199 +1,175 @@
 # Physical Bot Firmware
 
-**Purpose:** Software stack for Robot Arena bots using Phone + ESP32 + Arduino architecture.
+**Purpose:** Software stack for Robot Arena bots using Phone + ESP32 architecture.
 
 ## Hardware Stack
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│              Single Bot (1 of 30 per team)                   │
+│              Single Bot Node (1 of 30 per team)              │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │         Phone (Mounted on Bot - Python App)             ││
-│  │   Bot Brain • POV Camera • WiFi Mesh • BLE to ESP32    ││
+│  │   Bot Brain • POV Camera • WiFi to Team Controller      ││
 │  └──────────────────────────┬──────────────────────────────┘│
-│                              │ BLE                           │
+│                              │ UART (USB-OTG serial)         │
 │                              ▼                               │
 │  ┌─────────────────────────────────────────────────────────┐│
-│  │              ESP32 (BLE Server + Sensors)               ││
-│  └──────────────────────────┬──────────────────────────────┘│
-│                              │ UART                          │
-│                              ▼                               │
-│  ┌─────────────────────────────────────────────────────────┐│
-│  │              Arduino Nano (Motor Control)               ││
+│  │         ESP32 Hardware Bridge (Arduino C++)             ││
+│  │   I2C/SPI sensors • GPIO motors • IR LED                ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**Key Concept:** Each bot has its own phone mounted on it. One phone per bot, 30 phones per team, 60 phones on the field. The phone runs the behavior script and records POV footage. ESP32 handles BLE communication and sensor aggregation. Arduino Nano handles motor PWM and encoder reading.
+**Key Concept:** Each bot has its own phone mounted on it. The phone runs the behavior script and records POV footage. The ESP32 is the hardware bridge — connected to the phone via UART (USB-OTG serial) — and interfaces with motors, sensors, and IR LED via I2C/SPI/GPIO.
 
 ## Robot Classes
 
-| Class | Size Limit | Target Use | Budget |
-|-------|-----------|------------|--------|
-| **Starter Class (20cm)** | 20cm diameter, 20cm height | Learning, casual competition | €50-100 |
-| **Maintenance Class (60cm)** | 60cm diameter, 60cm height | Infrastructure work, bounties | €200-400 |
+| Class | Size Limit | Budget | Game Mode | Arena |
+|-------|-----------|--------|-----------|-------|
+| **Starter Class (20cm)** | 20cm diameter, 20cm height | €100-150 | Sumo (teams) | 3x3m fixed floor |
+| **Maintenance Class (60cm)** | 60cm diameter, 60cm height | €250-450 | Challenges (vs clock) | Modular 1x1m modules |
 
 See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for complete specifications.
 
 ## Module Responsibilities
 
 ### Phone (Mounted on Each Bot) (`/phone-app/`)
-**Role:** Bot brain, POV camera, mesh coordination
+**Role:** Bot brain, POV camera, WiFi link to team controller
 
-**One phone per bot. 30 phones per team. 60 phones on the field.**
+**One phone per bot. Up to 30 phones per team.**
 
 **Capabilities:**
-- Executes behavior script autonomously during match
-- Records POV camera footage (60 camera angles per match!)
-- Coordinates with teammates via WiFi mesh
-- Sends motor commands to ESP32 via BLE
+- Executes local behavior logic (Python) — runs independently if WiFi is lost
+- Records POV camera footage (60 camera angles per match in Sumo!)
+- Receives commands from team controller via WiFi
+- Reports telemetry back to team controller via WiFi
+- Sends motor/LED commands to ESP32 via UART (USB-OTG serial)
 - Logs all telemetry for Knowledge Commons
 
 **Communicates via:**
-- BLE to ESP32 on this bot (command/telemetry)
-- WiFi mesh to other bots on team (coordination)
+- UART to ESP32 on this bot (motor commands, sensor telemetry)
+- WiFi to team controller (swarm commands, telemetry reporting)
 
-### ESP32 BLE Hub (`/esp32-firmware/`)
-**Role:** BLE server, sensor aggregation, UART bridge to Arduino
-
-**Written in:** Arduino C++ (Arduino IDE)
-
-**Listens for (BLE):**
-- Movement commands from phone
-- Configuration updates
-- Telemetry requests
-
-**Sends (BLE):**
-- Sensor readings (IMU, distance, battery)
-- Motor feedback (encoder counts)
-- Status updates
-
-**UART to Arduino:**
-- Forward movement commands
-- Receive encoder/battery data
-
-### Arduino Nano Motor Controller (`/arduino-motor-controller/`)
-**Role:** Motor PWM control, encoder reading, battery monitoring
+### ESP32 Hardware Bridge (`/esp32-firmware/`)
+**Role:** UART bridge from phone to low-level hardware (I2C/SPI/GPIO)
 
 **Written in:** Arduino C++ (Arduino IDE)
 
-**Listens for (UART from ESP32):**
-- 0x01 MOVE_FORWARD
-- 0x02 MOVE_BACKWARD
-- 0x03 TURN_LEFT
-- 0x04 TURN_RIGHT
-- 0x05 STOP
-- 0x06 DRIVE_DIFFERENTIAL
-- 0x0A EMERGENCY_STOP
+**Receives from phone (UART):**
+- Movement commands (forward, backward, turn, stop, differential drive)
+- IR LED control (on/off)
+- Sensor requests
 
-**Sends (UART to ESP32):**
-- 0x08 STATUS (battery voltage, encoder counts) @ 10Hz
+**Sends to phone (UART):**
+- Sensor readings (IMU via I2C, encoders via GPIO interrupts)
+- Battery voltage (ADC)
+- Motor state, IR LED state
+- Telemetry stream at 10Hz
+
+**Hardware interfaces:**
+- I2C: IMU (MPU6886 or similar), magnetometer, other sensors
+- SPI: high-speed peripherals as needed
+- GPIO: motor PWM outputs, wheel encoder interrupts, IR LED control
+- ADC: battery voltage monitoring
 
 ## Communication Protocols
 
-### BLE Protocol (Phone ↔ ESP32)
+### WiFi Protocol (Team Controller ↔ Node Phones)
 
-**Service UUID:** `0000FFE0-0000-1000-8000-00805F9B34FB`
+Standard WiFi (TCP/UDP). This is the hackable link in Sumo mode.
 
-**Characteristics:**
-| UUID | Name | Properties | Description |
-|------|------|------------|-------------|
-| FFE1 | Command | Write | Movement commands from phone |
-| FFE2 | Telemetry | Notify | Sensor data to phone @ 10Hz |
-| FFE3 | Config | Read/Write | Bot configuration |
-
-**Command Format (FFE1):**
-```
-[cmd_type:1][param1:2][param2:2][checksum:1]
-
-Commands:
-0x01 MOVE_FORWARD  [duration_ms:2][speed_pct:2]
-0x02 MOVE_BACKWARD [duration_ms:2][speed_pct:2]
-0x03 TURN_LEFT     [duration_ms:2][speed_pct:2]
-0x04 TURN_RIGHT    [duration_ms:2][speed_pct:2]
-0x05 STOP          [0:2][0:2]
-0x06 DIFFERENTIAL  [left_speed:2][right_speed:2]
-0x0A EMERGENCY     [0:2][0:2]
+**Controller → Node:** JSON commands over TCP
+```json
+{"cmd": "move_forward", "speed": 80, "duration_ms": 2000}
+{"cmd": "set_formation", "role": "flank_left", "target": [1.5, 2.0]}
 ```
 
-**Telemetry Format (FFE2):**
-```
-[battery_mv:2][left_enc:4][right_enc:4][imu_heading:2][distance_cm:2]
+**Node → Controller:** JSON telemetry over UDP
+```json
+{"node_id": 5, "battery": 92, "enc_l": 45, "enc_r": 42, "ir_led": true}
 ```
 
-### UART Protocol (ESP32 ↔ Arduino)
+### UART Protocol (Phone ↔ ESP32)
 
-**Baud Rate:** 115200
+**Configuration:** USB-OTG serial, 115200 baud, 8N1
+
 **Packet Format:** STX + Cmd + Length + Payload + CRC8
 
 ```
 ┌─────┬─────┬────────┬─────────────────┬──────┐
 │ STX │ Cmd │ Length │     Payload     │ CRC8 │
-│ 0x02│ 1B  │   1B   │    0-255 B      │  1B  │
+│ 0x02│ 1B  │   1B   │    0-16 B       │  1B  │
 └─────┴─────┴────────┴─────────────────┴──────┘
 ```
 
-**Commands (same as BLE, forwarded by ESP32):**
-- 0x01-0x06: Movement commands
-- 0x08: Status response
-- 0x0A: Emergency stop
+**Commands (Phone → ESP32):**
+- 0x01 MOVE_FORWARD — duration_ms (2B), speed (1B)
+- 0x02 MOVE_BACKWARD — duration_ms (2B), speed (1B)
+- 0x03 TURN_LEFT — duration_ms (2B), speed (1B)
+- 0x04 TURN_RIGHT — duration_ms (2B), speed (1B)
+- 0x05 STOP
+- 0x06 DRIVE — left_speed (1B), right_speed (1B)
+- 0x07 GET_SENSORS
+- 0x08 SET_IR_LED — state (1B: 0=off, 1=on)
+- 0x09 EMERGENCY_STOP
+- 0x0A PING
+
+**Telemetry (ESP32 → Phone, 10Hz):**
+- Battery %, encoder L/R, accelerometer XYZ, gyro Z, flags (IR LED state)
 
 ## Software Layers
 
-**Layer 0: Firmware (this directory)**
-- Arduino C++ for ESP32 and Arduino Nano
-- Low-level motor control, sensor reads, BLE/UART handling
-- Compiled and uploaded via Arduino IDE
+**Layer 0: ESP32 Firmware (this directory)**
+- Arduino C++ compiled via Arduino IDE
+- UART command parser, I2C/SPI sensor reading, GPIO motor PWM, IR LED control
+- Telemetry streaming at 10Hz back to phone via UART
 
 **Layer 1: Phone App (per bot)**
 - Python (Kivy or BeeWare framework)
-- Runs behavior script, POV recording, mesh coordination
-- Each bot has its own phone mounted on it
+- Controls ESP32 via UART (USB-OTG serial)
+- Receives commands from team controller via WiFi
+- Runs local fallback behavior if WiFi is lost
+- POV camera recording
 
-**Layer 2: Pilot's Script**
-- Python behavior script written by pilot
-- Uploaded to all 30 phones before match
-- No changes allowed during match (autobattler format)
+**Layer 2: Team Controller Script**
+- Python behavior script written by pilot (with LLM assistance)
+- Runs on team main controller (laptop/phone)
+- Communicates with up to 30 node phones via WiFi
+- Receives overview camera feed (IR LED positions)
 
 ## Development Workflow
-
-**Arduino Nano:**
-1. Write C++ code in Arduino IDE
-2. Compile and upload to Arduino Nano
-3. Test UART communication with ESP32
 
 **ESP32:**
 1. Write C++ code in Arduino IDE
 2. Compile and upload to ESP32
-3. Test BLE connection with phone app
-4. Test UART bridge to Arduino
+3. Test UART communication with phone app
 
 **Phone App:**
 1. Write Python behavior script (Kivy/BeeWare)
 2. Test on emulator or single bot
-3. Test BLE connection to ESP32
-4. Deploy to all 30 phones on team's bots
+3. Test UART connection to ESP32 via USB-OTG
+4. Deploy to all phones on team's bots
 
 ## Deployment
 
 **Rental Fleet:**
-- All bots run identical ESP32/Arduino firmware
+- All bots run identical ESP32 firmware
 - Version tracked in Logistics Operations inventory
-- Updates deployed between events (firmware via OTA, phone apps via WiFi)
+- Updates deployed between events (ESP32 firmware via USB, phone apps via WiFi)
 
 **Pilot Customization:**
-- Pilots write behavior scripts (Python)
-- Upload to all 30 phones before match
+- Pilots write behavior scripts (Python) for the team controller
+- Optional: custom local fallback behaviors loaded onto node phones
 - Same firmware, different strategies
 - Share strategies via Knowledge Commons
 
 ## Data Collection
 
 **Match Logs (Critical for Dataset):**
-- Each phone records POV footage (60 camera angles per match!)
-- Each phone logs all BLE traffic and telemetry
-- Auto-uploads to Knowledge Commons after match
+- Each phone records POV footage (60 camera angles per Sumo match!)
+- Each phone logs all UART telemetry from its ESP32
+- Auto-uploads to Knowledge Commons after match via WiFi
 - Collision events extracted for ML training
 
 **Why This Matters:**
@@ -203,4 +179,4 @@ The match logs are the raw data that proves the dataset captures real swarm phys
 
 For complete technical architecture, see [ARCHITECTURE.md](../ARCHITECTURE.md).
 
-For hardware specifications, see [02-logistics-operations/README.md](../02-logistics-operations/README.md).
+For hardware specifications, see [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md).

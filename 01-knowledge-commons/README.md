@@ -31,17 +31,17 @@ The moment you try to capture proprietary advantage, the contribution dynamic br
 
 **`/starter-class/`** - Entry Level (20cm)
 - Official Starter Class specification and reference design (must fit 20cm circle, 20cm height max)
-- ESP32 + Arduino firmware (Arduino IDE)
-- Complete BOM with supplier links (€50-100/bot)
+- ESP32 firmware (Arduino IDE) + Phone app (Python)
+- Complete BOM with supplier links (€100-150/bot incl. phone)
 - 3D printable STL files (CC-BY-SA license)
-- Use case: Swarm Sumo competitions, schools, learning
+- Use case: Sumo competitions (teams, 3x3m fixed arena), schools, learning
 
 **`/maintenance-class/`** - Professional (60cm)
 - Official Maintenance Class specification (must fit 60cm circle, 60cm height max)
 - Weatherproof chassis design with modular attachment system
-- Enhanced compute platform (ESP32 + optional Raspberry Pi)
-- Complete BOM with supplier links (€200-400/bot)
-- Use case: Bounty challenges, infrastructure maintenance contracts
+- Same phone + ESP32 architecture as Starter Class
+- Complete BOM with supplier links (€250-450/bot incl. phone)
+- Use case: Challenges (vs clock, modular arena built from 1x1m modules)
 
 See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 
@@ -66,15 +66,14 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 ### `/firmware/`
 
 **`/official-arduino/`** - Base Firmware (Arduino IDE)
-- Serial OTG connection and protocol
-- ESP32 BLE server firmware
-- Arduino motor controller firmware
+- ESP32 UART bridge firmware (receives commands from phone via USB-OTG serial)
+- I2C/SPI sensor reading, GPIO motor PWM, IR LED control
 
 **`/pilot-forks/`** - Custom Firmware (Must Remain Compatible)
 - Optimized motion control algorithms
 - Enhanced sensor processing
 - Custom trigger logic
-- **Requirement:** Must respond to same HTTP API for fair competition
+- **Requirement:** Must respond to same UART protocol for fair competition
 
 ### `/strategies/`
 
@@ -116,7 +115,7 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full class details.
 **The training data goldmine.** Thousands of hours of 60-bot multi-agent behavior under adversarial conditions, with complete hardware/software documentation.
 
 **`/match-replays/`** - Full Sensor Logs (Licensed)
-- **Serial logs** from Android phone storage (complete bot communication record)
+- **UART logs** from Android phone storage (complete bot communication record)
 - 60× robot position/velocity trajectories reconstructed from logs
 - 60× camera feeds (from phone cameras, saved separately, referenced in metadata)
 - Network traffic captures (pcap format, includes hacker attacks)

@@ -51,7 +51,7 @@
 
 **What's open:**
 - Robot designs (STL files, CAD, BOM)
-- Software (MicroPython firmware, control algorithms, swarm coordination)
+- Software (ESP32 firmware, Python phone app, control algorithms, swarm coordination)
 - Module libraries (validated solutions for specific tasks)
 - Competition footage (YouTube, 60-camera multiview)
 - Match data (sensor logs, network traffic, outcomes)
@@ -162,38 +162,38 @@
 
 ### Competition Format Validates Industrial Applications
 
-**2v2 Team Structure (4 Participants Total):**
-- Team Red: 1 Pilot (30 robots) + 1 Hacker (attacks Team Blue)
-- Team Blue: 1 Pilot (30 robots) + 1 Hacker (attacks Team Red)
-- 90-second rounds on 3x3m arena
-- Victory: Team with more robots in goal zones
+**Two Game Modes:**
+
+**Sumo (Starter Class, 20cm, 3x3m fixed arena):**
+- Team Red: 1 Pilot (30 bots) + 1 Hacker (attacks Team Blue)
+- Team Blue: 1 Pilot (30 bots) + 1 Hacker (attacks Team Red)
+- 90-second rounds, victory: most bots in opponent's goal circle
+
+**Challenge (Maintenance Class, 60cm, modular arena):**
+- 1 Pilot + up to 30 bots vs the clock
+- Modular arena built from 1x1m modules with 3D-printed panels (walls, ramps, obstacles)
+- Different layout per challenge, 90-second time limit
 
 **What This Tests:**
-- **Operator:** Can you coordinate 30 units in 90 seconds? (Too many for manual control, forces automation)
-- **Hacker:** Can you compromise enemy swarm via WiFi? (IP traffic analysis, packet injection, command hijacking)
-- **Integration:** Can your operator use captured enemy robots on the fly?
-- **Resilience:** Does your swarm fail safe or fail catastrophic under attack?
+- **Sumo — Pilot:** Can you coordinate 30 units in 90 seconds? (Too many for manual control, forces automation)
+- **Sumo — Hacker:** Can you compromise enemy swarm via WiFi? (IP traffic analysis, packet injection, command hijacking)
+- **Challenge — Pilot:** Can your swarm complete a task objective on an unfamiliar arena layout?
+- **Both — Resilience:** Does your swarm fail safe or fail catastrophic under pressure?
 
-**Why This Matters for Commercial Deployment:**
-
-Every actual deployment faces these threats:
-- Bus stop washers: Hostile network environments (public WiFi, vandalism, interference)
-- Delivery robots: Adversaries trying to disrupt or hijack
-- Agricultural swarms: GPS jamming, communication disruption
-- Warehouse fleets: Cyber attacks on coordination protocols
-
-**The Arena validates not just "does it work" but "does it work when someone is trying to make it not work."**
+**The Arena validates not just "does it work" but "does it work under competitive pressure."**
 
 ### Game Progression (Inspired by Z RTS)
 
-**Game 1: Sumo Blobs (Baseline)**
-- Colored blobs on floor, robots start on opposite sides
-- Who has more robots on blobs at 90 seconds wins
+**Sumo Progression (Starter Class, 3x3m fixed arena):**
+
+**Game 1: Basic Sumo**
+- Goal circles at each end, robots start on opposite sides
+- Who has more robots in opponent's goal circle at 90 seconds wins
 - Tests: Basic swarm coordination, navigation, collision avoidance
 - No hacking yet (prove fundamentals first)
 
 **Game 2: Network Attacks Added**
-- Same blob objectives
+- Same goal objectives
 - Hackers can now disrupt enemy swarm (deauth, jamming, packet injection)
 - Tests: Resilience under adversarial conditions
 
@@ -202,14 +202,16 @@ Every actual deployment faces these threats:
 - Momentum compounds (your 15 becomes 18, their 15 becomes 12)
 - Tests: Network security, robot allegiance switching, operator adaptability
 
-**Game 4: Territory Production Bonuses (Full Z Rules)**
-- Tipping point mechanic (>50% territory → game accelerates toward conclusion)
-- Tests: Strategic prioritization, snowball resistance, contested resource control
+**Challenge Progression (Maintenance Class, modular arena):**
 
-**Game 5: Industrial Task Objectives**
-- "Wash this window without breaking it" (bus stop module validation)
-- "Mark these lines accurately" (road marking module validation)
-- Tests: Real-world capability under adversarial pressure
+**Challenge 1: Navigation**
+- Navigate modular arena layout within 90 seconds
+- Tests: Pathfinding, obstacle avoidance on configurable terrain
+
+**Challenge 2: Task Completion**
+- Complete specific objectives (inspection, cleaning, manipulation)
+- Arena layout changes per challenge using 3D-printed panels on 1x1m modules
+- Tests: Swarm coordination for practical tasks
 
 **Each stage proves another system component before full complexity hits.**
 
@@ -249,7 +251,7 @@ Every actual deployment faces these threats:
 **Requirements to qualify:**
 - Successfully resurrect/compete with one robot
 - Host successful practice Arena (6+ participants)
-- Pass technical quiz (ESP32, MicroPython, safety)
+- Pass technical quiz (ESP32, Python, safety)
 
 **Earn through:**
 - 20% commission on Awakening Module sales at their events (€10 per €50 module)

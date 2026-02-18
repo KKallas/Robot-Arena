@@ -20,10 +20,10 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full robot class detai
 ## Core Functions
 
 ### Build
-- Manufacture 60-bot Starter Class (20cm) swarm fleets
-- Manufacture 60-bot Maintenance Class (60cm) fleets for bounties and infrastructure work
+- Manufacture 60-bot Starter Class (20cm) fleets for Sumo competitions
+- Manufacture 30-bot Maintenance Class (60cm) fleets for Challenge mode
 - **Produce Awakening Modules** (phone + ESP32 retrofit kits for obsolete robot resurrection)
-- Produce modular 3x3m arena systems with camera infrastructure
+- Produce Sumo arenas (3x3m fixed) and Challenge arenas (modular 1x1m modules) with camera infrastructure
 - Assemble pilot interface kits (screens, input devices, AI integration)
 - Build hacker station packages (network monitoring, attack tooling)
 - Maintain quality standards across all hardware
@@ -55,22 +55,21 @@ See [BOT-SPECIFICATIONS.md](../BOT-SPECIFICATIONS.md) for full robot class detai
 
 ### `/fleet-designs/`
 
-**Starter Class Fleets (20cm) - Entry Level**
-- **60-bot competition fleet:** 20cm platforms with ESP32 + Arduino firmware
-- **Cost per fleet:** €4.5k hardware + €1k labor/assembly = €5.5k total
-- **Rental rate:** €2k/weekend → breakeven at 3 events, profit after
+**Starter Class Fleets (20cm) - Sumo**
+- **60-bot competition fleet:** 20cm platforms with phone + ESP32 (UART)
+- **Cost per fleet:** €6k hardware + €1k labor/assembly = €7k total
+- **Rental rate:** €2k/weekend → breakeven at 4 events, profit after
 - **Spares inventory:** 20% spare bots (12 extra) for quick replacement
-- **Charging infrastructure:** 60-bot charging station, 2-hour full charge cycle
+- **Charging infrastructure:** 60-bot charging station (bots + phones), 2-hour full charge cycle
 - **Transport cases:** Stackable pelican cases, each holds 12 bots
-- **Use case:** Swarm Sumo competitions, schools, casual events
+- **Use case:** Sumo competitions (teams, 3x3m fixed arena), schools, casual events
 
-**Maintenance Class Fleets (60cm) - Professional**
-- **60-bot competition fleet:** 60cm weatherproof platforms with modular attachments
-- **Cost per fleet:** €18k hardware + €3k labor/assembly = €21k total
-- **Rental rate:** €3-4k/weekend → breakeven at 6-7 events
-- **Outdoor capability:** Enables industry-relevant bounty scenarios
+**Maintenance Class Fleets (60cm) - Challenges**
+- **30-bot fleet:** 60cm platforms with phone + ESP32 (UART), weatherproof, modular attachments
+- **Cost per fleet:** €10k hardware + €2k labor/assembly = €12k total
+- **Rental rate:** €2-3k/weekend → breakeven at 5-6 events
 - **Modular tooling:** Grippers, sensors, cleaning attachments for specific challenges
-- **Use case:** Bounty challenges, infrastructure maintenance contracts
+- **Use case:** Challenge mode (vs clock, modular arena built from 1x1m modules)
 
 ### `/awakening-modules/`
 
@@ -155,23 +154,24 @@ A robot that unsticks autonomous lawn mowers when they get stuck:
 
 ### `/arena-systems/`
 
-**3x3m Modular Arena (Phase 1)**
+**Sumo Arena (3x3m Fixed Floor)**
 - Lightweight aluminum frame (flat-pack for shipping)
-- Overhead camera mount (captures all 60 bots)
-- Goal circle markers (LED-lit, color-coded)
+- Overhead camera mount (sees all IR LEDs, provides god-view)
+- Goal circle markers (LED-lit, color-coded) at each end
 - Safety barriers (prevent bot escape)
 - Assembly time: 2 hours by 2 people
 - Disassembly time: 1 hour
 - **Cost:** €2k per arena system
-- **Rental:** Included in competition package
+- **Rental:** Included in Sumo competition package
 
-**Scenario-Specific Arenas (Phase 2, Years 3+)**
-- Cave system mockup (GPS-denied navigation challenge)
-- Warehouse layout (capture the flag with obstacles)
-- Territory control grid (hold position challenge)
-- Sequential cooperation course (button-pushing gates)
-- **Cost:** €5-8k per specialized arena
-- **Rental:** €500-1k additional fee beyond base package
+**Challenge Arena (Modular 1x1m Modules)**
+- 1x1m floor modules with 10x10cm spigots
+- 3D-printed panels attach to spigots: walls, ramps, obstacles, gates
+- Different layout per challenge — reconfigurable
+- Overhead camera mount
+- **Cost:** €3-5k per module set (9-12 modules + panel library)
+- **Rental:** Included in Challenge competition package
+- **Panel library grows over time** — new challenges add new panel designs to Knowledge Commons
 
 ### `/pilot-interfaces/`
 
@@ -204,7 +204,7 @@ A robot that unsticks autonomous lawn mowers when they get stuck:
 - **After every event:**
   - Visual inspection, charge all batteries (bots + phones)
   - Verify serial logs uploaded to Knowledge Commons (automatic via WiFi from phones)
-  - Firmware update check (Arduino, ESP32 bridge, M5 Atom)
+  - Firmware update check (ESP32 bridge)
   - Clear phone storage (logs auto-upload, then purge)
 - **Monthly:** Deep clean, motor bearing check, sensor calibration
 - **Quarterly:** Replace worn components (wheels, sensors), battery health test
