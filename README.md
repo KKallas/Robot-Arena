@@ -74,16 +74,11 @@ The main controller talks to nodes over WiFi. In Sumo, WiFi can be disrupted by 
 
 **Sumo (2 teams, Starter class):**
 
-| Role | Count | Job |
-|------|-------|-----|
-| **Pilot** | 1 per team | Writes/prepares the swarm script that runs on the main controller |
-| **Hacker** | 1 per team | Prepares WiFi disruption scripts targeting opponent's controller-to-node communication |
-
-60 bots total on field (30 per team). Nobody touches anything once the match starts.
+Each team uploads two repos: a **swarm script** (runs on the team controller, commands 30 bots) and a **hacking script** (WiFi disruption targeting the opponent's controller-to-node communication). 60 bots total on field. Nobody touches anything once the match starts.
 
 **Challenge (1 team, Maintenance class):**
 
-1 Pilot + up to 30 bots vs the clock. No hacker role — no opponent to hack. The challenge is the task itself.
+One team uploads a swarm script + up to 30 bots vs the clock. No hacking — no opponent to hack. The challenge is the task itself.
 
 ### Robot Classes
 
@@ -214,3 +209,13 @@ This data — especially the human-AI collaboration during script preparation an
 - [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) — Starter (20cm) and Maintenance (60cm) class specs
 - [TIMELINE-ARCHITECTURE.md](TIMELINE-ARCHITECTURE.md) — Event storage format
 - [THE-BOARD.md](THE-BOARD.md) — Guild marketplace system
+
+---
+
+## Why Cooperation Wins
+
+Robot Arena is a proof of concept for rational cooperation in competitive environments.
+
+In a prisoner's dilemma, the temptation is to hoard your best strategy. But in a 90-second match with open-source code, shared datasets, and a living tech tree — there's more to gain by sharing your solution with everybody than by hoping your secret sauce stays secret.
+
+**A rising tide lifts all ships.** When you share a technique, the whole meta evolves. When you hoard it, you peak for one tournament and fall behind when others independently discover it anyway. Nobody peaks forever. In the long run, cooperation always wins.
