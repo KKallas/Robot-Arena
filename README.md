@@ -29,17 +29,17 @@ Each bot has a phone on it — that's 60 cameras filming every match. 90-second 
 
 ### How a Match Runs
 
-**Before match:** Pilot prepares a Python script (with or without LLM assistance) and loads it onto the team main controller.
+**Before match:** Pilot prepares a Python script (with or without LLM assistance) and uploads it as a GitHub repo.
 
 **Match starts (90 seconds, no human intervention):**
 
-1. The main script runs on the team controller
-2. It communicates with 30 individual nodes over WiFi
+1. The repo is pulled and the script runs automatically on the team controller
+2. It communicates with up to 30 individual nodes over WiFi
 3. The script reacts to two input sources:
    - **Node telemetry** — each bot reports its own sensor data back to the controller
    - **Overview camera** — sees IR LEDs mounted on top of each bot, gives the controller a god-view of the arena
 
-The main script can be purely programmatic (if/else, state machines) or LLM-based with software triggers for different conditions.
+The main script can be purely programmatic (if/else, state machines) or LLM-based with software triggers for different conditions. Nobody touches anything once it starts.
 
 **Match ends:** Timer hits zero. Scoring is evaluated.
 

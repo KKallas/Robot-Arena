@@ -237,7 +237,7 @@ Both classes share the same software architecture: **each bot has a phone mounte
 ### Maintenance Class Rental
 - **Event rental:** €100/day per bot
 - **Tournament package:** €2000/weekend (30-bot team + arena)
-- **Contract support:** €200/day (bot + operator assistance)
+- **Contract support:** €200/day (bot + technical assistance)
 
 ---
 

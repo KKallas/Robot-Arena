@@ -159,8 +159,8 @@ Standard WiFi (TCP/UDP). This is the hackable link in Sumo mode.
 - Updates deployed between events (ESP32 firmware via USB, phone apps via WiFi)
 
 **Pilot Customization:**
-- Pilots write behavior scripts (Python) for the team controller
-- Optional: custom local fallback behaviors loaded onto node phones
+- Pilots write behavior scripts (Python) and upload as a GitHub repo
+- Repo is pulled automatically onto the team controller at match start
 - Same firmware, different strategies
 - Share strategies via Knowledge Commons
 

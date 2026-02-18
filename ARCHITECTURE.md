@@ -109,8 +109,8 @@ Both classes share the same software architecture (phone app + ESP32 firmware vi
 ```
 Before Match (Preparation):
   - Pilot writes swarm script with LLM assistance
-  - Script loaded onto team main controller
-  - Optional: local fallback behaviors loaded onto node phones
+  - Uploads it as a GitHub repo
+  - Repo is pulled automatically onto team controller at match start
 
 During Match:
   Team Controller (laptop/phone):
