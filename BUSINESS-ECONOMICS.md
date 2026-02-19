@@ -217,6 +217,10 @@
 
 ### Why 90 Seconds?
 
+**The autonomy sweet spot:** 90 seconds is where autonomous behavior beats supervised driving. At that latency, it makes more sense for a bot to react on its own than wait for a controller. This is the real skill — writing programs that handle the next 90 seconds without you.
+
+**Programs stack into real work:** A bus stop glass washer is probably 4 panes from both sides — a sequence of "wash pane, turn" routines. You compose that from arena-sized programs and fill in the missing transitions with LLM help. The arena teaches you to build the building blocks; real-world tasks are just longer chains of them.
+
 **Long enough:** Complex strategies unfold, coordination emerges, hacker attacks develop
 
 **Short enough:** Can't wait out problems, every decision matters, no turtling
@@ -224,8 +228,6 @@
 **Fast validation:** Months of simulation compressed into 90 seconds of chaos
 
 **Spectator-friendly:** Complete story in under 2 minutes, multiple matches per event, bracket tournaments
-
-**Natural conclusion:** Match self-terminates when outcome is obvious (tipping point reached)
 
 ---
 

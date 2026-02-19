@@ -63,6 +63,12 @@ The main script can be purely programmatic (if/else, state machines) or LLM-base
 
 **Match ends:** Timer hits zero. Scoring is evaluated.
 
+### Why 90 Seconds
+
+90 seconds is the sweet spot where autonomous behavior beats supervised driving. At that latency, it makes more sense for a bot to react on its own than wait for instructions from a controller. This is the skill the arena trains — writing programs that handle the next 90 seconds without you.
+
+And 90-second programs stack. A bus stop glass washer is probably 4 panes from both sides — that's a sequence of "wash pane, turn, wash pane, turn" routines. You can compose that from arena-sized programs and fill in the missing transitions with LLM help. The arena teaches you to build the building blocks; real-world tasks are just longer chains of them.
+
 ### IR LED Rule
 
 Every bot has an IR LED on top, visible to the overview camera. **The LED must be on for at least 45 of the 90 seconds.** This ensures bots are trackable and forces teams to be visible — you can't just go dark and hide from the overview cam.
