@@ -202,7 +202,7 @@ This data — especially the human-AI collaboration during script preparation an
 **Three products:**
 
 1. **Match datasets** — licensed to AI/robotics companies (preparation logs + match logs + per-node logs). Academic: free. Commercial: €50k-500k/year.
-2. **Content** — 60 camera angles per match from bot phones + overview cam. Sponsors pay for content library access (€50k-200k/year).
+2. **Content & sponsorship** — event content creators are trained and quality-validated by MechArena (tutorials on YouTube) to produce sponsor-grade social media content from arena events. 60 camera angles per match + overview cam = massive raw footage. Sponsors pay to have branding in the arena and on bots, then repost the validated content to their own channels. Companies are buying a quality-controlled content pipeline, not ad space (€50k-200k/year).
 3. **Hardware rental & resale** — rent bots, arenas, and all materials (€2k/weekend competition packages, €500/semester school packages, €1.4k/day corporate events). Sell your own bots into the rental pool — they get rented and resold to new users. Two-way marketplace.
 
 **Entry is low-friction:** show up, rent bots for €50-100, compete same day. Build your own fleet and sell it back when you're done. Or 3D print from open-source designs. This scales.
@@ -212,6 +212,10 @@ This data — especially the human-AI collaboration during script preparation an
 ---
 
 ## Education
+
+**People need questions before they can learn answers.** A teacher who has already solved the problem is useless for the learning process — because the main thing students need to learn is how to validate their own understanding. Going through the motions of a pre-solved exercise teaches compliance, not engineering. Students need to solve novel problems with instructions, not rehearse someone else's solution.
+
+MechArena gives them that. Every match is a novel problem. The arena configuration changes, the opponent's strategy is unknown, and the 90-second clock doesn't care if you're confused. Instructions and course materials exist, but the problems are real and unsolved.
 
 Schools and labs don't need to buy anything — rent the equipment for an event, run the competition, return it.
 
