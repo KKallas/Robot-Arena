@@ -24,7 +24,7 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        MechArena Ecosystem                    │
+│                        MechArena Ecosystem                      │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────────┐  ┌──────────────────┐   ┌───────────────┐ │
@@ -40,7 +40,7 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 │                                 │                               │
 │                    ┌────────────┴────────────┐                  │
 │                    │                         │                  │
-│         ┌──────────▼──────────┐   ┌─────────▼──────────┐        │
+│         ┌──────────▼──────────┐   ┌──────────▼─────────┐        │
 │         │  Physical System    │   │ Virtual Simulator  │        │
 │         │                     │   │                    │        │
 │         │ - Phone App (Python)│   │ - Python Emulator  │        │
@@ -83,8 +83,8 @@ Both classes share the same software architecture (phone app + ESP32 firmware vi
 │  │  - WiFi: reports telemetry back to team controller       │  │
 │  │  - UART to ESP32 via USB-OTG serial                      │  │
 │  └──────────────────────────┬───────────────────────────────┘  │
-│                              │ UART (USB-OTG serial)           │
-│                              ▼                                 │
+│                             │ UART (USB-OTG serial)            │
+│                             ▼                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │           ESP32 Hardware Bridge (Arduino C++)            │  │
 │  │                                                          │  │
