@@ -1,6 +1,6 @@
 # Robot Arena
 
-**Auto chess meets robotics.** Two teams each prepare swarm scripts with AI copilots (Claude, ChatGPT), then watch 30 bots fight autonomously for 90 seconds. Nobody touches anything once the match starts. The team with more bots in the opponent's goal circle wins.
+**Auto chess meets robotics.** Two teams each prepare swarm scripts with AI copilots (Claude, ChatGPT, Ollama or any other LLM), then watch 30 bots fight autonomously for 90 seconds. Nobody touches anything once the match starts. The team with more bots in the opponent's goal circle wins.
 
 Each bot has a phone on it — that's 60 cameras filming every match. 90-second clips from 60 angles, ready for TikTok/Reels/Shorts. Every pilot becomes a content creator.
 
