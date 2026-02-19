@@ -6,14 +6,14 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│              Single Bot Node (1 of 30 per team)              │
+│              Single Bot Node (1 of 30 per team)             │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │         Phone (Mounted on Bot - Python App)             ││
 │  │   Bot Brain • POV Camera • WiFi to Team Controller      ││
 │  └──────────────────────────┬──────────────────────────────┘│
-│                              │ UART (USB-OTG serial)         │
-│                              ▼                               │
+│                              │ UART (USB-OTG serial)        │
+│                              ▼                              │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │         ESP32 Hardware Bridge (Arduino C++)             ││
 │  │   I2C/SPI sensors • GPIO motors • IR LED                ││
