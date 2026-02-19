@@ -1,7 +1,7 @@
-# Robot Arena Business Economics
+# MechArena Business Economics
 ## Why the Bounty Model Works (And How It Doesn't Extract)
 
-**Core Thesis:** Robot Arena creates a distributed R&D pipeline funded by those who capture commercial value, while releasing all knowledge to the commons. This inverts the traditional extraction model.
+**Core Thesis:** MechArena creates a distributed R&D pipeline funded by those who capture commercial value, while releasing all knowledge to the commons. This inverts the traditional extraction model.
 
 ---
 
@@ -131,7 +131,7 @@
 
 **The Result:** Platform captures valuable work (human creativity, problem-solving patterns), workers get only immediate transaction
 
-### What Robot Arena Does (Commons Model)
+### What MechArena Does (Commons Model)
 
 **The Setup:** We watch every solution, learn from every failure, synthesize patterns
 
@@ -382,7 +382,7 @@
 - 3-6 months for complete beginner to find first valid bug
 - Don't quit your day job
 
-### Robot Arena Model (Our Adaptation)
+### MechArena Model (Our Adaptation)
 
 **Structure:**
 - Anyone posts problem (commercial need: bus stop washing)
@@ -420,7 +420,7 @@
 
 **Economics comparison:**
 
-| Aspect | Bug Bounty | Robot Arena Bounty |
+| Aspect | Bug Bounty | MechArena Bounty |
 |--------|------------|------------------|
 | Entry cost | €0 | €50+ (filters noise) |
 | Winner reward | €500-€150k | €5k-€50k (pooled) |
@@ -447,7 +447,7 @@
 
 **The extraction:** Platform captures value, workers get transaction. Asymmetric power.
 
-### Robot Arena's Model (Commons)
+### MechArena's Model (Commons)
 
 **What we provide:** Infrastructure (arena, verification, coordination)
 
@@ -461,7 +461,7 @@
 
 **The difference:**
 
-| Cloudflare | Robot Arena |
+| Cloudflare | MechArena |
 |------------|-----------|
 | Silent extraction | Explicit synthesis |
 | Sells back as product | Publishes as commons |
@@ -509,7 +509,7 @@
 
 **Traditional robotics company perspective:** "Why would we open-source our designs? Our competitors will copy them!"
 
-**Robot Arena operator perspective:** "My competitor in London uses the same chassis. So what? They're in London, I'm in Tallinn. We both benefit from shared development, we compete on operations."
+**MechArena operator perspective:** "My competitor in London uses the same chassis. So what? They're in London, I'm in Tallinn. We both benefit from shared development, we compete on operations."
 
 **The reality:**
 - Your moat is expertise, not hardware
@@ -525,7 +525,7 @@
 - Market exploded because compatibility created ecosystem
 - IBM didn't dominate, but the industry thrived
 
-**Robot Arena is PC clones for small-scale industrial robotics.**
+**MechArena is PC clones for small-scale industrial robotics.**
 
 ---
 

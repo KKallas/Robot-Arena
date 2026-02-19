@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PR Fixer for Robot Arena
+PR Fixer for MechArena
 
 Finds open PRs with review comments, uses Claude to fix issues based on feedback,
 and responds to the comments.
@@ -27,7 +27,7 @@ import shutil
 from pathlib import Path
 
 # Config - can override with environment variables
-REPO = os.environ.get("ROBOT_ARENA_REPO", "KKallas/Robot-Arena")
+REPO = os.environ.get("MECHARENA_REPO", "KKallas/MechArena")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 MAX_PRS = 5
 ALLOWED_TOOLS_ANALYZE = "Read,Glob,Grep,Bash(ls *)"  # Read-only for analysis
@@ -623,7 +623,7 @@ Examples:
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  Robot Arena PR Fixer")
+    print("  MechArena PR Fixer")
     print("  Fixing PRs based on review feedback")
     print("=" * 60)
 

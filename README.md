@@ -1,12 +1,12 @@
-# Robot Arena
+# MechArena
 
 **Auto chess meets robotics.** Two teams each prepare swarm scripts with AI copilots (Claude, ChatGPT, Ollama or any other LLM), then watch 30 bots fight autonomously for 90 seconds. Nobody touches anything once the match starts. The team with more bots in the opponent's goal circle wins.
 
 Each bot has a phone on it — that's 60 cameras filming every match. 90-second clips from 60 angles, ready for TikTok/Reels/Shorts. Every pilot becomes a content creator.
 
-**Built for ages 15-19** — the gap between ROS (too complex, academic) and bare-metal C/Python (too low-level, no structure). Robot Arena gives young engineers a real competition framework with Python scripts, AI copilots, and physical robots, without needing a university robotics lab.
+**Built for ages 15-19** — the gap between ROS (too complex, academic) and bare-metal C/Python (too low-level, no structure). MechArena gives young engineers a real competition framework with Python scripts, AI copilots, and physical robots, without needing a university robotics lab.
 
-**You don't start from zero.** Fork someone's strategy from the Knowledge Commons. Retrofit an old Roomba with a €50 phone + ESP32 kit. Use last season's winning script as your starting point. Or just rent everything — bots, arena, the whole setup. Built something good? Sell your bots back to the rental pool, where they get rented and resold to the next wave of competitors. New isn't always better — Robot Arena makes the complicated things systematic and easier to manage. The whole stack is open-source: hardware designs, firmware, strategies, and match data.
+**You don't start from zero.** Fork someone's strategy from the Knowledge Commons. Retrofit an old Roomba with a €50 phone + ESP32 kit. Use last season's winning script as your starting point. Or just rent everything — bots, arena, the whole setup. Built something good? Sell your bots back to the rental pool, where they get rented and resold to the next wave of competitors. New isn't always better — MechArena makes the complicated things systematic and easier to manage. The whole stack is open-source: hardware designs, firmware, strategies, and match data.
 
 **The actual product is match data.** Every match captures the full AI-assisted development process: the prompts, iterations, debugging sessions, and the swarm behavior that resulted. This is the same format as chess game notation (PGN) — but for physical robotics with adversarial WiFi hacking. AI companies license this data to train the next generation of physical-world automation systems.
 
@@ -18,7 +18,7 @@ DJI drones didn't win because of better motors or sensors — those components a
 
 **Catching up requires more samples, faster.** To close the gap, we need to generate and validate millions of real-world interactions. That means we need a product people actually want to build, compete with, and collect data from at massive scale. That's the Arena — the competition creates demand for cheap robots, and cheap robots generate data.
 
-**The sim-to-real problem is the same everywhere.** When you run a heat or static loading simulation in Fusion 360, you don't trust it blindly. You build a simplified physical model, measure it, tune the simulator inputs until the results match reality, then swap in the final design and simulate. Mecha Arena does the same thing for robotics: if you know your current position, motion vector, and spin, an ML model should predict your next frame — accounting for collisions and boundaries. Run the exact same program in simulation and reality, compare the outputs, and fine-tune until they converge.
+**The sim-to-real problem is the same everywhere.** When you run a heat or static loading simulation in Fusion 360, you don't trust it blindly. You build a simplified physical model, measure it, tune the simulator inputs until the results match reality, then swap in the final design and simulate. MechArena does the same thing for robotics: if you know your current position, motion vector, and spin, an ML model should predict your next frame — accounting for collisions and boundaries. Run the exact same program in simulation and reality, compare the outputs, and fine-tune until they converge.
 
 **Why ML instead of a physics engine?** The predictor doesn't simulate physics — it finds the closest matching paths from real recorded matches. Given your current state (position, motion vector, spin), the model returns the top 10-20 closest real-world trajectories and their percentage match. Your predicted next frame is a weighted blend of paths that actually happened. More recorded matches = better predictions. This is why the competition feeds the simulator — every match makes the model more accurate.
 
@@ -193,7 +193,7 @@ This data — especially the human-AI collaboration during script preparation an
 
 **Real STEM engagement.** This isn't a staged demo. Teams use AI tools to write real code under competitive pressure. Schools, hackathons, corporate team-building — all generate authentic content with sponsor branding on the arena and bots.
 
-**Traditional content production costs €5k-20k per video.** One Robot Arena sponsorship generates unlimited clips across 60 angles. Cost per impression crushes paid media.
+**Traditional content production costs €5k-20k per video.** One MechArena sponsorship generates unlimited clips across 60 angles. Cost per impression crushes paid media.
 
 ---
 
@@ -249,7 +249,7 @@ The goal: any teacher can pick up the free materials and run a competition. If t
 
 ## Why Cooperation Wins
 
-Robot Arena is a proof of concept for rational cooperation in competitive environments.
+MechArena is a proof of concept for rational cooperation in competitive environments.
 
 In a prisoner's dilemma, the temptation is to hoard your best strategy. But in a 90-second match with open-source code, shared datasets, and a living tech tree — there's more to gain by sharing your solution with everybody than by hoping your secret sauce stays secret.
 

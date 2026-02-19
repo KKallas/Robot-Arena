@@ -1,4 +1,4 @@
-# Robot Arena Bot Specifications
+# MechArena Bot Specifications
 
 **Version:** 1.0
 **Last Updated:** 2026-02-11
@@ -7,7 +7,7 @@
 
 ## Overview
 
-Robot Arena has two official robot classes, each designed for specific use cases:
+MechArena has two official robot classes, each designed for specific use cases:
 
 | Class | Size Limit | Budget | Game Mode | Arena |
 |-------|-----------|--------|-----------|-------|

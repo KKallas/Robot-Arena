@@ -70,7 +70,7 @@ show_help() {
     echo "  ./contribute.sh fix --pr 123          # Fix specific PR"
     echo ""
     echo "Environment Variables:"
-    echo "  ROBOT_ARENA_REPO   Override repo (default: KKallas/Robot-Arena)"
+    echo "  MECHARENA_REPO   Override repo (default: KKallas/MechArena)"
     echo "  CLAUDE_MODEL       Override model (default: claude-sonnet-4-20250514)"
     echo ""
 }

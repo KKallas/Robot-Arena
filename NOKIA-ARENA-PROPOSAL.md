@@ -11,7 +11,7 @@
 ### What This Means
 
 **Not a robotics education center.** Nokia Arena hosts:
-- Competitive leagues (Robot Arena matches)
+- Competitive leagues (MechArena matches)
 - Skills certification (4 Guild rating systems)
 - Open infrastructure maintenance (hardware specs, firmware, datasets)
 - Commercial marketplace (The Board crowdfunding platform)
@@ -38,7 +38,7 @@
 
 **Result:** Slow innovation, high cost, limited accessibility.
 
-### Robot Arena's Solution
+### MechArena's Solution
 
 **Competitive pressure + open infrastructure:**
 - €50 robots compete in 90-second matches
@@ -304,7 +304,7 @@ Robotics infrastructure hub:
 - Data generated: Minimal (score, stats)
 - Long-term value: Entertainment only
 
-**Robot Arena match:**
+**MechArena match:**
 - Competition: €2,000 ticket revenue (smaller scale)
 - Data generated: Complete human-AI collaboration timeline
 - Long-term value: Licensed to 10 companies @ €50k/year = €500k recurring

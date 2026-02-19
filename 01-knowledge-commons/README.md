@@ -271,7 +271,7 @@ When someone needs a capability that doesn't exist yet (glass-washing module, st
 Resurrection Challenges are a special category of bounty where the target is a specific obsolete robot platform:
 
 **Q1 2025: Roomba 500 Series**
-- Prize pool: €5k (Robot Arena seed) + community additions
+- Prize pool: €5k (MechArena seed) + community additions
 - Challenge: Retrofit Roomba 500 with Awakening Module (phone + ESP32), compete in Division 2 (Obstacle Course)
 - Success criteria: Place in top 50% of Division 2 matches at sanctioned event
 - Knowledge release: Wiring diagrams, firmware, performance analysis enters `/resurrection-archive/roomba-500/`
@@ -327,7 +327,7 @@ Resurrection Challenges are a special category of bounty where the target is a s
 
 **Revenue Model:**
 
-- **Bounty Commission:** 5% of total prize pool retained by Robot Arena
+- **Bounty Commission:** 5% of total prize pool retained by MechArena
 - **Purpose:** Fund bounty infrastructure (test object design, verification tools, Arena demonstration logistics)
 - **Example:** €12.5k glass-washing bounty → €625 commission → €11,875 to winners
 - **Transparency:** All fees disclosed upfront, no hidden charges
@@ -391,7 +391,7 @@ For detailed explanation of why this model doesn't extract value (unlike traditi
 
 **Requirements:**
 - Affiliation with academic/research institution OR personal research project
-- Citation requirement in publications (`Robot Arena Dataset v2025.1, licensed under CC-BY-NC-SA-4.0`)
+- Citation requirement in publications (`MechArena Dataset v2025.1, licensed under CC-BY-NC-SA-4.0`)
 - Share trained models back to community (encouraged, not required)
 - **No commercial revenue** generated from derivative works
 
@@ -435,7 +435,7 @@ For detailed explanation of why this model doesn't extract value (unlike traditi
 - Defense/military customers: Custom pricing (typically €500k+ fixed fee, no revenue share)
 
 **Attribution Requirement (All Commercial Tiers):**
-- Product must credit "Robot Arena Physical AI Dataset" in documentation
+- Product must credit "MechArena Physical AI Dataset" in documentation
 - Logo usage permitted (and encouraged) in marketing materials
 - Case study participation (for companies making >€10M with our data)
 
@@ -519,7 +519,7 @@ For detailed explanation of why this model doesn't extract value (unlike traditi
 - Value: Dataset becomes more valuable as more companies contribute via competition
 - Marketing: Sponsorship provides ROI beyond just data access
 
-**For Robot Arena:**
+**For MechArena:**
 - Maximizes dataset adoption (network effects)
 - Revenue concentrates on successful deployments (proof of value)
 - Sustainable: Big winners fund operations, enable continued free tier

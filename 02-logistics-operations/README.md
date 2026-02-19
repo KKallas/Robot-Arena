@@ -1,6 +1,6 @@
 # Logistics Operations
 
-**Purpose:** Build, rent, ship, and receive everything needed to run Robot Arena swarm competitions anywhere.
+**Purpose:** Build, rent, ship, and receive everything needed to run MechArena swarm competitions anywhere.
 
 ## What This Is
 
@@ -100,7 +100,7 @@ A robot that unsticks autonomous lawn mowers when they get stuck:
   - Quick-start guide with photos for 5 common obsolete robots (Roomba, RC car, robotic vacuum, toy tank, lawn mower)
   - Wiring diagram card (laminated, waterproof)
   - QR code linking to Knowledge Commons Resurrection Archive
-  - Metal sticker: "Reawakened by Robot Arena"
+  - Metal sticker: "Reawakened by MechArena"
 - **Use Cases:**
   - Individual pilots resurrecting home robots for practice
   - Schools using e-waste for educational sustainability projects
@@ -503,7 +503,7 @@ This creates recurring content for YouTube, adds variety to event programming, a
 
 **Franchise Model:**
 - Regional partners manufacture additional fleets locally
-- License Robot Arena brand + event formats
+- License MechArena brand + event formats
 - Revenue share: 15% of rental fees to central organization
 - Dataset contribution mandatory (maintains Knowledge Commons value)
 
@@ -547,4 +547,4 @@ Pilots who build custom Starter Class bots drive innovation (custom mods, new st
 - **Years 3-4:** Rental profit funds fleet scaling + custom platform R&D
 - **Years 5+:** Rental + dataset licensing + sponsorship = fully self-sustaining, no more grants needed
 
-This model ensures Robot Arena doesn't depend on hardware sales margins (low profit, commoditized) but instead on **rental utilization + dataset value** (high margin, network effects).
+This model ensures MechArena doesn't depend on hardware sales margins (low profit, commoditized) but instead on **rental utilization + dataset value** (high margin, network effects).

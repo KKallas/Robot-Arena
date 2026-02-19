@@ -1,6 +1,6 @@
 # The Board: Four Guild Markets
 
-**The Board is Robot Arena's unified crowdfunding platform with four specialized markets, each represented by a guild sigil.**
+**The Board is MechArena's unified crowdfunding platform with four specialized markets, each represented by a guild sigil.**
 
 Think Kickstarter meets skill progression: anyone can post a challenge, opportunity, or need. Others back it with money or XP. When goals are met, rewards distribute automatically. Your rating on each board determines tournament eligibility.
 

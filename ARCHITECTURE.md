@@ -1,4 +1,4 @@
-# Robot Arena Technical Architecture
+# MechArena Technical Architecture
 
 **Version:** 2.0
 **Last Updated:** 2026-02-11
@@ -7,7 +7,7 @@
 
 ## Overview
 
-Robot Arena is an autobattler robotics sport with three main pillars (Knowledge Commons, Logistics Operations, League Management) supported by two technical foundations: **Physical Bot Firmware** and **Virtual Arena Simulator**. This document describes the complete technical architecture from hardware to ML models.
+MechArena is an autobattler robotics sport with three main pillars (Knowledge Commons, Logistics Operations, League Management) supported by two technical foundations: **Physical Bot Firmware** and **Virtual Arena Simulator**. This document describes the complete technical architecture from hardware to ML models.
 
 **Key Architecture Decision:** Each bot node is a **phone + ESP32 connected via UART** (USB-OTG serial). The phone is the brain — runs Python, has camera, WiFi. The ESP32 is the hardware bridge — connects to motors, sensors, and IR LED via I2C/SPI/GPIO. One phone per bot, 30 per team, 60 on field.
 
@@ -24,7 +24,7 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Robot Arena Ecosystem                    │
+│                        MechArena Ecosystem                    │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────────┐  ┌──────────────────┐   ┌───────────────┐ │
@@ -58,7 +58,7 @@ A **team main controller** (laptop or separate phone) runs the pilot's swarm scr
 
 ### Robot Classes
 
-Robot Arena has two official robot classes. See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full details.
+MechArena has two official robot classes. See [BOT-SPECIFICATIONS.md](BOT-SPECIFICATIONS.md) for full details.
 
 | Class | Size Constraint | Cost | Game Mode | Arena |
 |-------|-----------------|------|-----------|-------|

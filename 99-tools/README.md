@@ -1,10 +1,10 @@
-# Robot Arena Automation Tools
+# MechArena Automation Tools
 
 **The Meta-Game:** We're building a robot battle arena where AI pilots fight AI hackers. But here's the twist—we're using AI agents to build it. LLMs managing GitHub issues, solving tasks, creating PRs. Robots building the arena for robots.
 
 ## Why This Matters
 
-Robot Arena will run autonomous bot battles. No human pilots. No real-time control. Just uploaded scripts fighting it out while we watch.
+MechArena will run autonomous bot battles. No human pilots. No real-time control. Just uploaded scripts fighting it out while we watch.
 
 So why not use the same approach for development?
 
@@ -114,8 +114,8 @@ Simple bash wrapper for the Python tools.
 Environment variables:
 
 ```bash
-# Override repository (default: KKallas/Robot-Arena)
-export ROBOT_ARENA_REPO="your-org/your-repo"
+# Override repository (default: KKallas/MechArena)
+export MECHARENA_REPO="your-org/your-repo"
 
 # Override Claude model (default: claude-sonnet-4-20250514)
 export CLAUDE_MODEL="claude-opus-4-20250514"
@@ -132,7 +132,7 @@ export CLAUDE_MODEL="claude-opus-4-20250514"
 
 This is practice for the real thing.
 
-When Robot Arena launches, we'll have:
+When MechArena launches, we'll have:
 - **Bot Pilots** - AI scripts controlling arena bots
 - **Bot Hackers** - AI scripts trying to compromise opponents
 - **Match Orchestrator** - Autonomous system running battles

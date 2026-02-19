@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Issue Solver for Robot Arena
+Issue Solver for MechArena
 
 Finds llm-ready issues, uses Claude to solve them, and creates PRs.
 
@@ -26,7 +26,7 @@ import shutil
 from pathlib import Path
 
 # Config - can override with environment variables
-REPO = os.environ.get("ROBOT_ARENA_REPO", "KKallas/Robot-Arena")
+REPO = os.environ.get("MECHARENA_REPO", "KKallas/MechArena")
 CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
 MAX_ISSUES = 5
 BRANCH_PREFIX = "auto"
@@ -157,7 +157,7 @@ def setup_repo(work_dir: str) -> str:
 
 def build_prompt(issue: dict) -> str:
     """Build the prompt for Claude."""
-    return f"""You are solving a GitHub issue for the Robot Arena project.
+    return f"""You are solving a GitHub issue for the MechArena project.
 
 ## Issue #{issue['number']}: {issue['title']}
 
@@ -413,7 +413,7 @@ def process_issue(issue: dict, dry_run: bool = False, test_mode: bool = False) -
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Solve GitHub issues for Robot Arena",
+        description="Solve GitHub issues for MechArena",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Modes:
@@ -438,7 +438,7 @@ Examples:
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  Robot Arena Issue Solver")
+    print("  MechArena Issue Solver")
     print("  Solving llm-ready issues and creating PRs")
     print("=" * 60)
 

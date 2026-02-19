@@ -31,7 +31,7 @@ This is a research/consolidation task, not a coding task.
 ### 1.1 Test moderate_issues.py --dry-run
 
 ```bash
-cd /Users/kasparkallas/Documents/GitHub/Robot-Arena
+cd /Users/kasparkallas/Documents/GitHub/MechArena
 python3 moderate_issues.py --dry-run
 ```
 
@@ -206,13 +206,13 @@ After testing:
 
 ```bash
 # Close test issue if not needed
-gh issue close <NUMBER> --repo kasparkallas/Robot-Arena
+gh issue close <NUMBER> --repo kasparkallas/MechArena
 
 # Delete test branch if created
 git push origin --delete auto/issue-<NUMBER>
 
 # Close test PR if created
-gh pr close <NUMBER> --repo kasparkallas/Robot-Arena
+gh pr close <NUMBER> --repo kasparkallas/MechArena
 ```
 
 ---

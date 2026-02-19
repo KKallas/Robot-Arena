@@ -88,7 +88,7 @@ grep -q "## Tasks" 04-virtual-arena-simulator/SPEC-0.1-ALPHA.md && echo "PASS: H
 
 ```bash
 gh issue create \
-  --repo kasparkallas/Robot-Arena \
+  --repo kasparkallas/MechArena \
   --title "[TASK] Consolidate Simulation ML Model Documentation" \
   --body-file TEST-ISSUE-SIMULATION.md \
   --label "llm-ready"

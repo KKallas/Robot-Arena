@@ -1,6 +1,6 @@
 # Physical Bot Firmware
 
-**Purpose:** Software stack for Robot Arena bots using Phone + ESP32 architecture.
+**Purpose:** Software stack for MechArena bots using Phone + ESP32 architecture.
 
 ## Hardware Stack
 
