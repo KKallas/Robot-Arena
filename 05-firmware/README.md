@@ -126,7 +126,7 @@ Standard WiFi (TCP/UDP). This is the hackable link in Sumo mode.
 - Telemetry streaming at 10Hz back to phone via UART
 
 **Layer 1: Phone App (per bot)**
-- Python (Kivy or BeeWare framework)
+- Python (Flask server + Chrome browser for UI)
 - Controls ESP32 via UART (USB-OTG serial)
 - Receives commands from team controller via WiFi
 - Runs local fallback behavior if WiFi is lost
@@ -146,7 +146,7 @@ Standard WiFi (TCP/UDP). This is the hackable link in Sumo mode.
 3. Test UART communication with phone app
 
 **Phone App:**
-1. Write Python behavior script (Kivy/BeeWare)
+1. Write Python behavior script (Flask backend + web UI)
 2. Test on emulator or single bot
 3. Test UART connection to ESP32 via USB-OTG
 4. Deploy to all phones on team's bots

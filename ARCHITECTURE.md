@@ -170,7 +170,7 @@ During Match:
 - WiFi for communication with team controller
 
 **Software:**
-- Python app (via Kivy, BeeWare, or similar)
+- Python app (Flask server + Chrome browser for UI)
 - WiFi client: receives commands from team controller, sends telemetry back
 - UART serial: sends motor/LED commands to ESP32, receives sensor data
 - Local fallback behaviors (run when WiFi connection to controller is lost)
@@ -944,7 +944,7 @@ More Competitors → More Physical Matches
 - Used phones work fine (~€50-100 each)
 
 **Software:**
-- Python app (Kivy, BeeWare, or similar framework)
+- Python app (Flask server + Chrome browser for UI)
 - pyserial (UART serial to ESP32)
 - WiFi client for team controller communication
 - POV camera recording
@@ -1005,7 +1005,7 @@ More Competitors → More Physical Matches
 - Integration testing (phone → UART → ESP32 → motors/sensors)
 
 ### Phase 2: Phone App Core (Months 2-4)
-- Python app framework setup (Kivy or similar)
+- Flask server + web UI setup (Chrome browser)
 - UART serial connection to ESP32
 - Basic manual control UI (joystick, telemetry display)
 - Script editor with syntax highlighting
