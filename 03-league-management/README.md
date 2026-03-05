@@ -88,21 +88,32 @@ Three autonomous agents handle operations:
 
 ---
 
-## Competition Format
+## Game Formats
 
-**Two game modes:**
+| Format | Class | Teams | Arena | Objective |
+|--------|-------|-------|-------|-----------|
+| **Sumo** | Starter (20cm) | 2 teams (Red vs Blue) | 3x3m fixed floor | Most bots in opponent's goal ring at 0:00 |
+| **Process Validation** | Maintenance (60cm) | 1 team vs clock | Modular 1x1m modules | Complete task objective within time limit |
 
-**Sumo (Starter Class, 20cm):**
-- 2 teams: Each has 1 Pilot (30 bots) + 1 Hacker (WiFi attacks)
-- 60 total bots on 3x3m fixed arena
-- 90-second rounds
-- Victory: Most bots in opponent's goal circle when time expires
+### Sumo
 
-**Challenge (Maintenance Class, 60cm):**
-- 1 team: 1 Pilot + up to 30 bots vs clock
-- Modular arena built from 1x1m modules with 3D-printed panels
-- 90-second rounds
-- Victory: Complete task objective within time limit
+Two teams of 20cm Starter Class bots compete on a **3x3m fixed arena** for 90 seconds. Each team fields up to 30 bots (60 total on field). Nobody touches anything once the match starts.
+
+**Winning condition:** The team with more bots inside the opponent's designated goal ring when the timer hits zero wins.
+
+**Arena surface:** The 3x3m floor is covered with a grid of **10x10cm spigot holes**. These accept 3D-printed arena accessories — walls, push buttons, doors, traps, ramps — that can be swapped between matches to change the layout. Same floor, different configuration every time.
+
+Each team uploads two repos before the match: a **swarm script** (commands up to 30 bots autonomously) and a **hacking script** (WiFi disruption targeting the opponent's controller-to-node communication). The strategic tension: centralized swarm coordination is powerful but vulnerable to hacking; distributed local behavior is resilient but uncoordinated.
+
+### Process Validation
+
+One team of 60cm Maintenance Class bots competes **against the clock** to fulfill a defined goal within the time limit. No opponent — the challenge is the task itself.
+
+**Arena:** Built from **modular 1x1m floor modules**, each covered by the same 3D-printed panel system as Sumo (10x10cm spigot grid). Walls, obstacles, gates, ramps — all interchangeable. This means we can **simulate almost any real-life situation** and reproduce it identically across multiple arenas in different locations.
+
+**Bots:** 60cm Maintenance Class with task-specific accessories mounted on standard attachment points — grippers, pushers, sensors, whatever the bounty requires.
+
+**Why this matters for bounty validation:** A bounty can require the team to pass the same task across **3 different arena matches in different physical locations**. Because the modular panel system is standardized, the arena layout is identical everywhere. If your solution works in Tallinn, it works in Berlin — provably, not theoretically. This turns process validation into something reproducible and location-independent.
 
 ---
 
